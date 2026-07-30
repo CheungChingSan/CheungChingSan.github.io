@@ -32,6 +32,12 @@
     radial-gradient(78% 58% at 50% -8%, rgba(255,255,255,.14) 0%, transparent 60%); }
   header.hero .brand-block{ position:absolute; top:16px; left:16px; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
   header.hero .brand-logo{ max-height:46px; max-width:220px; width:auto; height:auto; }
+  header.hero .chinaclock{ font-size:26px; color:#fff; font-weight:700; margin-top:4px;
+    font-variant-numeric:tabular-nums; letter-spacing:1px; line-height:1.1;
+    display:flex; align-items:center; white-space:nowrap; }
+  header.hero .chinaclock .seg{ display:inline-block; }
+  header.hero .chinaclock .colon{ font-weight:400; }
+  header.hero .chinaclock .tz{ margin-left:10px; font-size:13px; font-weight:600; opacity:.85; }
   header.hero h1, header.hero p{ position:relative; z-index:1; }
   header.hero h1{ margin:0; font-size:26px; letter-spacing:2px; font-weight:700; }
   header.hero p{ margin:8px 0 0; opacity:.9; font-size:13px; }
@@ -100,7 +106,9 @@
 </head>
 <body>
 <header class="hero">
-  <div class="brand-block"><img src="shinva_logo.png" alt="SHINVA Health" class="brand-logo"></div>
+  <div class="brand-block"><img src="shinva_logo.png" alt="SHINVA Health" class="brand-logo">
+    <div class="chinaclock" id="chinaclock"></div>
+  </div>
   <a class="back" href="index.html">← 返回综合索引</a>
   <h1>外贸价格速查</h1>
   <p>电外科外贸价格 · 按编码 / 名称 / 规格 / 型号精准定位产品全部信息</p>
@@ -111,35 +119,34 @@
       <div class="field">
         <label for="qCode">编码</label>
         <div class="input-wrap">
-          <input id="qCode" type="text" placeholder="如 HS00001 / HD10101" autocomplete="off" spellcheck="false">
+          <input id="qCode" type="text" autocomplete="off" spellcheck="false">
           <button type="button" class="clear-x" data-clear="qCode" title="清空编码" aria-label="清空编码">×</button>
         </div>
       </div>
       <div class="field">
         <label for="qName">名称</label>
         <div class="input-wrap">
-          <input id="qName" type="text" placeholder="如 高频手术设备 / 骨组织" autocomplete="off">
+          <input id="qName" type="text" autocomplete="off">
           <button type="button" class="clear-x" data-clear="qName" title="清空名称" aria-label="清空名称">×</button>
         </div>
       </div>
       <div class="field">
         <label for="qSpec">规格</label>
         <div class="input-wrap">
-          <input id="qSpec" type="text" placeholder="如 XGP-Y-I" autocomplete="off" spellcheck="false">
+          <input id="qSpec" type="text" autocomplete="off" spellcheck="false">
           <button type="button" class="clear-x" data-clear="qSpec" title="清空规格" aria-label="清空规格">×</button>
         </div>
       </div>
       <div class="field">
         <label for="qModel">型号</label>
         <div class="input-wrap">
-          <input id="qModel" type="text" placeholder="如 XGP-Y-I" autocomplete="off" spellcheck="false">
+          <input id="qModel" type="text" autocomplete="off" spellcheck="false">
           <button type="button" class="clear-x" data-clear="qModel" title="清空型号" aria-label="清空型号">×</button>
         </div>
       </div>
     </div>
     <div class="meta-bar">
       <span class="count">匹配 <b id="cnt">0</b> / <span id="total">0</span> 项</span>
-      <span class="hint">支持模糊匹配；四栏同时输入时为「且」关系。点击 [×] 或聚焦时按 ESC 清空当前栏，页面任意处按 ESC 重置全部。</span>
     </div>
   </div>
   <div id="results" class="grid"></div>
@@ -261,6 +268,26 @@ document.querySelectorAll('.clear-x').forEach(btn => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { e.preventDefault(); resetAll(); }
 });
+// 左上角实时中国时间（UTC+8），与站点其它页完全一致：26px 纯白、HH:MM:SS + (UTC+8)
+(function(){
+  const el = $('chinaclock');
+  if(!el) return;
+  function fmt(){
+    try { return new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date()); }
+    catch(e){ return '--:--:--'; }
+  }
+  function tick(){
+    const p = fmt().split(':');
+    if(p.length!==3){ el.textContent = fmt(); return; }
+    el.innerHTML = '<span class="seg">'+p[0]+'</span>'
+      + '<span class="colon">:</span>'
+      + '<span class="seg">'+p[1]+'</span>'
+      + '<span class="colon">:</span>'
+      + '<span class="seg">'+p[2]+'</span>'
+      + '<span class="tz">(UTC+8)</span>';
+  }
+  tick(); setInterval(tick, 1000);
+})();
 // 初始展示全部
 filter();
 </script>
