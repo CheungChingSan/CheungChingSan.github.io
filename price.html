@@ -98,12 +98,14 @@
     display:flex; align-items:center; justify-content:center; line-height:0; transition:transform .25s ease; }
   .fx-swap:hover{ transform:rotate(180deg); }
   .fx-swap:active{ transform:rotate(180deg) scale(.9); }
-  .fx-rates{ display:flex; flex-direction:column; gap:6px; margin-top:10px; }
-  .fx-rate{ display:flex; align-items:center; justify-content:center; gap:6px; font-size:11.5px; color:#fff; }
+  .fx-rates{ display:grid; grid-template-columns:1fr 1fr; gap:9px 10px; margin-top:10px; align-items:start; }
+  .fx-rate{ display:flex; align-items:center; gap:7px; font-size:12px; color:#fff; }
   .fx-rate input[type=checkbox]{ width:15px; height:15px; accent-color:#22d3ee; cursor:pointer; flex:none; }
   .fx-rate > span.lbl{ flex:none; white-space:nowrap; }
-  .fx-rate-in-wrap{ position:relative; display:inline-flex; align-items:center; flex:none; }
-  .fx-rate-in{ width:130px; padding:11px 26px 11px 13px; border-radius:11px; font-size:15px; text-align:center; color:var(--text);
+  .fx-rate.custom{ flex-direction:column; align-items:stretch; gap:6px; }
+  .fx-rate-head{ display:flex; align-items:center; gap:7px; }
+  .fx-rate-in-wrap{ position:relative; display:flex; align-items:center; width:100%; }
+  .fx-rate-in{ width:100%; padding:11px 26px 11px 13px; border-radius:11px; font-size:15px; text-align:center; color:var(--text);
     background:rgba(255,255,255,.05); border:1px solid var(--sky); outline:none; font-variant-numeric:tabular-nums; }
   .fx-rate-in:focus{ border-color:var(--sky); }
   /* 系统定值（今日/月初/月末汇率）：只读、不可键入，光标提示禁止 */
@@ -250,13 +252,10 @@
             </div>
           </div>
           <div class="fx-rates">
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span>
-              <span class="fx-rate-in-wrap"><input id="fxToday" class="fx-rate-in" type="text" inputmode="decimal" value="6.7894" readonly></span></div>
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl">月初汇率</span>
-              <span class="fx-rate-in-wrap"><input id="fxMonthStart" class="fx-rate-in" type="text" inputmode="decimal" value="7.18" readonly></span></div>
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl">月末汇率</span>
-              <span class="fx-rate-in-wrap"><input id="fxMonthEnd" class="fx-rate-in" type="text" inputmode="decimal" value="7.22" readonly></span></div>
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span>
+            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span></div>
+            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl">月初汇率</span></div>
+            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl">月末汇率</span></div>
+            <div class="fx-rate custom"><label class="fx-rate-head"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span></label>
               <span class="fx-rate-in-wrap"><input id="fxCustom" class="fx-rate-in" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></div>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
@@ -493,7 +492,7 @@ document.addEventListener('keydown', e => {
 (function(){
   const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), usdField = $('fxFieldUsd'), rmbField = $('fxFieldRmb');
   const swapBtn = $('fxSwap'), rateVal = $('fxRateVal'), row = document.querySelector('.fx-row');
-  const rateIns = { today:$('fxToday'), monthStart:$('fxMonthStart'), monthEnd:$('fxMonthEnd'), custom:$('fxCustom') };
+  const customIn = $('fxCustom'); const rateVals = { today: RATE_CFG.today, monthStart: 7.18, monthEnd: 7.22 };
   const srcEl = document.querySelector('.fx-src');
   const checks = {};
   document.querySelectorAll('.fx-check').forEach(c => checks[c.dataset.rate] = c);
@@ -504,7 +503,7 @@ document.addEventListener('keydown', e => {
   attachThousands(rmbIn, 2);
   attachThousands(usdIn, 2);
   function rate(){
-    const v = numOf(rateIns[active]);
+    const v = active === 'custom' ? numOf(customIn) : rateVals[active];
     return (isFinite(v) && v > 0) ? v : (RATE_CFG.today || 6.7894);
   }
   // 高亮当前作为换算源的输入框（双向模式下无只读，仅作视觉反馈）
@@ -516,9 +515,7 @@ document.addEventListener('keydown', e => {
   function applyRate(val, srcText){
     if(!(val > 0)) return;
     RATE_CFG.today = val;
-    rateIns.today.value = val.toFixed(4);
-    rateIns.monthStart.value = val.toFixed(4);
-    rateIns.monthEnd.value = val.toFixed(4);
+    rateVals.today = val; rateVals.monthStart = val; rateVals.monthEnd = val;
     rateVal.textContent = val.toFixed(4);
     if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统定值，每日自动更新，不可手动修改。';
     if(active === 'today' || active === 'monthStart' || active === 'monthEnd') recalc();
@@ -569,7 +566,7 @@ document.addEventListener('keydown', e => {
       if(checks[k].checked){
         active = k;
         Object.keys(checks).forEach(j => { if(j !== k) checks[j].checked = false; });
-        if(k === 'custom' && rateIns.custom.value.trim() === '') rateIns.custom.value = '7.00';  // 固定汇率勾选默认 7.00
+        if(k === 'custom' && customIn.value.trim() === '') customIn.value = '7.00';  // 固定汇率勾选默认 7.00
         recalc();
       } else if(active === k){
         active = 'today'; checks['today'].checked = true; recalc();   // 不允许全部取消：回退今日汇率
@@ -577,30 +574,26 @@ document.addEventListener('keydown', e => {
     });
   });
   // 固定汇率：聚焦且仍为默认 7.00 时自动清空，方便输入
-  rateIns.custom.addEventListener('focus', () => {
-    if(rateIns.custom.value === '7.00'){
-      rateIns.custom.value = '';
-      const w = rateIns.custom.closest('.fx-rate-in-wrap');
+  customIn.addEventListener('focus', () => {
+    if(customIn.value === '7.00'){
+      customIn.value = '';
+      const w = customIn.closest('.fx-rate-in-wrap');
       if(w) w.classList.remove('has-val');
     }
   });
   // 汇率选项输入框：实时换算 + [×] 显隐 + ESC 清除（仅焦点在该框内才生效）
-  Object.keys(rateIns).forEach(k => {
-    const el = rateIns[k];
-    if(el.readOnly) return;   // 系统定值（今日/月初/月末）只读，不绑输入/ESC 清除，防破坏定值
-    const wrap = el.closest('.fx-rate-in-wrap');
-    el.addEventListener('input', () => {
-      if(wrap) wrap.classList.toggle('has-val', el.value !== '');
-      if(active === k) recalc();
-    });
-    el.addEventListener('keydown', e => {
-      if(e.key === 'Escape'){
-        e.stopPropagation();
-        el.value = '';
-        if(wrap) wrap.classList.remove('has-val');
-        if(active === k) recalc();
-      }
-    });
+  const customWrap = customIn.closest('.fx-rate-in-wrap');
+  customIn.addEventListener('input', () => {
+    if(customWrap) customWrap.classList.toggle('has-val', customIn.value !== '');
+    if(active === 'custom') recalc();
+  });
+  customIn.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){
+      e.stopPropagation();
+      customIn.value = '';
+      if(customWrap) customWrap.classList.remove('has-val');
+      if(active === 'custom') recalc();
+    }
   });
   // [×] 清除汇率选项输入框
   document.querySelectorAll('[data-fxclr]').forEach(b => {
@@ -611,11 +604,11 @@ document.addEventListener('keydown', e => {
       el.value = '';
       const wrap = el.closest('.fx-rate-in-wrap');
       if(wrap) wrap.classList.remove('has-val');
-      if(active === id) recalc();
+      if(active === 'custom') recalc();   // 仅固定汇率有 [×]，清空后回退当前生效汇率
     });
   });
   // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保每日自动更新锚点生效
-  rateIns.today.value = RATE_CFG.today;
+  // 今日/月初/月末为系统定值，仅勾选无输入框；汇率值由 rateVals 提供（applyRate 每日刷新 today）
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   if(RATE_CFG.src) srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.src)+'</b> · 今日/月初/月末为系统定值，每日自动更新，不可手动修改。';
   applySrc(); syncMainX(); recalc();
