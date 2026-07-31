@@ -177,14 +177,14 @@ function fmtPrice(v){
   if (!isFinite(n)) return esc(v);
   return n.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
-// 型号与规格相同（且均非空）→ 型号栏显示 ✅️
+// 型号与规格相同（且均非空）→ 规格栏显示 ✅️；型号栏恒显示真实型号内容
 function modelSameAsSpec(fields){
   const s = String(fields['规格'] == null ? '' : fields['规格']).trim();
   const m = String(fields['型号'] == null ? '' : fields['型号']).trim();
   return s !== '' && m !== '' && s === m;
 }
 function fieldRows(fields, sq, mq){
-  const order = ['规格','型号','含税人民币单价(¥)','线下美金价格($)','平台美金价格($)','自销价(¥)'];
+  const order = ['型号','规格','含税人民币单价(¥)','线下美金价格($)','平台美金价格($)','自销价(¥)'];
   const keys = Object.keys(fields||{});
   keys.sort((a,b)=>{ const ia=order.indexOf(a), ib=order.indexOf(b);
     return (ia<0?99:ia) - (ib<0?99:ib); });
@@ -193,8 +193,8 @@ function fieldRows(fields, sq, mq){
     const isPrice = /单价|价格/.test(k);
     let val;
     if (isPrice) val = fmtPrice(fields[k]);
-    else if (k === '规格') val = hl(fields[k], sq);
-    else if (k === '型号') val = modelSameAsSpec(fields) ? '<span class="same" title="型号与规格相同">✅️</span>' : hl(fields[k], mq);
+    else if (k === '规格') val = modelSameAsSpec(fields) ? '<span class="same" title="型号与规格相同">✅️</span>' : hl(fields[k], sq);
+    else if (k === '型号') val = hl(fields[k], mq);
     else val = esc(fields[k]);
     h += '<div class="kv"><span class="k">'+esc(k)+'</span><span class="v'+(isPrice?' price':'')+'">'+val+'</span></div>';
   }
