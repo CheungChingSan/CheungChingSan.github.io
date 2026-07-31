@@ -48,19 +48,19 @@
     font-size:13px; font-weight:600; color:#fff; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22);
     padding:8px 14px; border-radius:10px; transition:.18s; }
   .back:hover{ background:rgba(255,255,255,.2); transform:translateY(-1px); }
-  .wrap{ max-width:1180px; margin:14px auto 56px; padding:0 20px; position:relative; z-index:2; }
+  .wrap{ max-width:1440px; margin:14px 18px 56px; padding:0; position:relative; z-index:2; }
   /* 主体布局：左侧搜索栏竖排 + 右侧结果网格 */
-  .layout{ display:grid; grid-template-columns:268px 1fr; gap:20px; align-items:start; }
-  .sidebar{ position:sticky; top:18px; }
+  .layout{ display:grid; grid-template-columns:268px 1fr; gap:14px; align-items:start; }
+  .sidebar{ position:sticky; top:16px; }
   /* 搜索面板（左侧竖排） */
-  .search-panel{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px 15px;
-    backdrop-filter:blur(14px) saturate(160%); box-shadow:0 18px 50px rgba(2,6,23,.45); }
+  .search-panel{ background:rgba(15,23,42,.66); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:14px;
+    backdrop-filter:blur(12px); box-shadow:0 12px 34px rgba(0,0,0,.38); }
   .search-col{ display:flex; flex-direction:column; gap:14px; }
   .field{ display:flex; flex-direction:column; gap:6px; }
   .field label{ font-size:12px; color:#fff; font-weight:700; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.35); }
   .field .input-wrap{ position:relative; display:flex; align-items:center; }
   .field input{ width:100%; padding:11px 38px 11px 13px; border-radius:11px; font-size:15px; color:var(--text);
-    background:rgba(2,6,23,.5); border:1px solid var(--line); transition:.18s; }
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.16); transition:.18s; }
   .field input::placeholder{ color:#5b6b85; }
   .field input:focus{ outline:none; border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); }
   /* 圆形清空按钮 [×] */
@@ -75,6 +75,7 @@
   .fx{ margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
   .fx-title{ font-size:12px; font-weight:700; color:#fff; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.3); margin-bottom:10px; }
   .fx-row{ display:flex; align-items:center; gap:8px; }
+  .fx-row.reversed{ flex-direction:row-reverse; }
   .fx-field{ position:relative; flex:1 1 0; min-width:0; display:flex; align-items:center;
     background:rgba(2,6,23,.5); border:1px solid var(--line); border-radius:11px; padding:0 10px; transition:.18s; }
   .fx-field.src{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); }
@@ -95,6 +96,8 @@
   .fx-rate-in:focus{ border-color:var(--sky); }
   .fx-note{ margin-top:10px; font-size:11.5px; color:var(--muted); }
   .fx-note b{ color:var(--accent); font-weight:700; }
+  .fx-src{ font-size:11px; color:#6b7c96; margin-top:6px; line-height:1.4; }
+  .fx-src b{ color:#9fb0c8; font-weight:600; }
   /* 结果 */
   .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(312px,1fr)); gap:12px; }
   .card{ position:relative; background:var(--panel2); border:1px solid var(--line); border-left:4px solid var(--brand);
@@ -183,23 +186,24 @@
         <div class="fx">
           <div class="fx-title">汇率换算</div>
           <div class="fx-row">
-            <div class="fx-field" id="fxFieldUsd">
-              <input id="fxUsd" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
-              <span class="fx-unit">USD</span>
-            </div>
-            <button type="button" class="fx-swap" id="fxSwap" title="点击切换换算方向" aria-label="切换换算方向">⇄</button>
             <div class="fx-field" id="fxFieldRmb">
               <input id="fxRmb" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
               <span class="fx-unit">RMB</span>
             </div>
+            <button type="button" class="fx-swap" id="fxSwap" title="点击切换 RMB / USD 位置与换算方向" aria-label="切换 RMB / USD">⇄</button>
+            <div class="fx-field" id="fxFieldUsd">
+              <input id="fxUsd" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+              <span class="fx-unit">USD</span>
+            </div>
           </div>
           <div class="fx-rates">
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span>今日汇率</span><input id="fxToday" class="fx-rate-in" type="text" inputmode="decimal" value="7.20"></div>
+            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span>今日汇率</span><input id="fxToday" class="fx-rate-in" type="text" inputmode="decimal" value="6.7894"></div>
             <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span>月初汇率</span><input id="fxMonthStart" class="fx-rate-in" type="text" inputmode="decimal" value="7.18"></div>
             <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span>月末汇率</span><input id="fxMonthEnd" class="fx-rate-in" type="text" inputmode="decimal" value="7.22"></div>
             <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="custom"><span>固定汇率</span><input id="fxCustom" class="fx-rate-in" type="text" inputmode="decimal" value="6.88"></div>
           </div>
-          <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">7.20</b> RMB</div>
+          <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
+          <div class="fx-src">汇率来源：<b>中国外汇交易中心</b> 2026-07-31 中间价（1 USD = 6.7894 CNY），可手动修改。</div>
         </div>
       </div>
     </aside>
@@ -355,39 +359,40 @@ document.addEventListener('keydown', e => {
 })();
 // ===== 汇率换算 =====
 (function(){
-  const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), swapBtn = $('fxSwap'), rateVal = $('fxRateVal');
+  const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), usdField = $('fxFieldUsd'), rmbField = $('fxFieldRmb');
+  const swapBtn = $('fxSwap'), rateVal = $('fxRateVal'), row = document.querySelector('.fx-row');
   const rateIns = { today:$('fxToday'), monthStart:$('fxMonthStart'), monthEnd:$('fxMonthEnd'), custom:$('fxCustom') };
   const checks = {};
   document.querySelectorAll('.fx-check').forEach(c => checks[c.dataset.rate] = c);
-  let dir = 'usd2rmb';   // usd2rmb：USD 为输入源，RMB 为结果；rmb2usd 反之
-  let active = 'today';  // 当前生效的汇率键
+  let reversed = false;   // false：RMB 在左(源)；true：USD 在左(源)
+  let active = 'today';    // 当前生效的汇率键
   function rate(){
     const v = parseFloat(rateIns[active].value);
-    return (isFinite(v) && v > 0) ? v : 7.2;
+    return (isFinite(v) && v > 0) ? v : 6.7894;
   }
+  function leftIn(){ return reversed ? usdIn : rmbIn; }
+  function rightIn(){ return reversed ? rmbIn : usdIn; }
+  function leftField(){ return reversed ? usdField : rmbField; }
+  function rightField(){ return reversed ? rmbField : usdField; }
   function applyDir(){
-    if(dir === 'usd2rmb'){
-      usdIn.readOnly = false; rmbIn.readOnly = true;
-      $('fxFieldUsd').classList.add('src'); $('fxFieldRmb').classList.remove('src');
-    } else {
-      rmbIn.readOnly = false; usdIn.readOnly = true;
-      $('fxFieldRmb').classList.add('src'); $('fxFieldUsd').classList.remove('src');
-    }
+    leftIn().readOnly = false; rightIn().readOnly = true;
+    leftField().classList.add('src'); rightField().classList.remove('src');
   }
   function recalc(){
-    rateVal.textContent = rate().toFixed(2);
-    if(dir === 'usd2rmb'){
-      const u = parseFloat(usdIn.value);
-      rmbIn.value = isFinite(u) ? (u * rate()).toFixed(2) : '';
-    } else {
-      const r = parseFloat(rmbIn.value);
-      usdIn.value = isFinite(r) ? (r / rate()).toFixed(2) : '';
-    }
+    rateVal.textContent = rate().toFixed(4);
+    const lv = parseFloat(leftIn().value);
+    let rv;
+    if(leftIn() === rmbIn) rv = isFinite(lv) ? lv / rate() : NaN;   // RMB -> USD
+    else rv = isFinite(lv) ? lv * rate() : NaN;                     // USD -> RMB
+    rightIn().value = isFinite(rv) ? rv.toFixed(2) : '';
   }
-  usdIn.addEventListener('input', () => { if(dir !== 'usd2rmb'){ dir = 'usd2rmb'; applyDir(); } recalc(); });
-  rmbIn.addEventListener('input', () => { if(dir !== 'rmb2usd'){ dir = 'rmb2usd'; applyDir(); } recalc(); });
+  [usdIn, rmbIn].forEach(inp => inp.addEventListener('input', recalc));
   swapBtn.addEventListener('click', () => {
-    dir = (dir === 'usd2rmb') ? 'rmb2usd' : 'usd2rmb';
+    const prevOut = rightIn().value;          // 切换前右侧(结果)值
+    reversed = !reversed;
+    row.classList.toggle('reversed', reversed);
+    leftIn().value = prevOut;                 // 原结果转为新源，保持数值连续
+    rightIn().value = '';
     applyDir(); recalc();
   });
   Object.keys(checks).forEach(k => {
@@ -397,8 +402,7 @@ document.addEventListener('keydown', e => {
         Object.keys(checks).forEach(j => { if(j !== k) checks[j].checked = false; });
         recalc();
       } else if(active === k){
-        // 不允许全部取消：回退到今日汇率
-        active = 'today'; checks['today'].checked = true; recalc();
+        active = 'today'; checks['today'].checked = true; recalc();   // 不允许全部取消：回退今日汇率
       }
     });
   });
