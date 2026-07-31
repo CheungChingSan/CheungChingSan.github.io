@@ -50,8 +50,6 @@
     padding:14px 28px; background:rgba(8,9,13,.72); backdrop-filter:blur(18px) saturate(160%);
     border-bottom:1px solid var(--line); }
   .topbar .brand{ display:flex; align-items:center; gap:14px; min-width:0; }
-  .topbar .brand-logo{ max-height:34px; max-width:190px; width:auto; height:auto; flex:none;
-    filter:drop-shadow(0 2px 10px rgba(91,157,255,.3)); }
   .topbar .titles{ display:flex; flex-direction:column; line-height:1.15; min-width:0; }
   .topbar h1{ margin:0; font-size:18px; font-weight:700; letter-spacing:.3px; white-space:nowrap; color:#fff; }
   .topbar .chinaclock{ flex:none; font-size:20px; color:#fff; font-weight:600;
@@ -70,7 +68,9 @@
     background:linear-gradient(90deg,var(--accent),var(--accent-2)); opacity:.9; }
   .field{ display:flex; flex-direction:column; gap:7px; margin-bottom:14px; }
   .field:last-of-type{ margin-bottom:0; }
-  .field label{ font-size:12.5px; color:var(--muted); font-weight:600; letter-spacing:.5px; }
+  .field label{ display:inline-block; font-size:12px; color:var(--accent); font-weight:700; letter-spacing:.6px;
+    padding:3px 11px; border-radius:999px; background:var(--accent-soft); border:1px solid rgba(91,157,255,.4);
+    box-shadow:0 0 12px rgba(91,157,255,.12); }
   .field .input-wrap{ position:relative; display:flex; align-items:center; }
   .field input{ width:100%; padding:12px 38px 12px 13px; border-radius:var(--radius-sm); font-size:16px; font-weight:500; color:var(--text);
     background:rgba(255,255,255,.05); border:1px solid var(--line-strong); transition:.18s; }
@@ -91,7 +91,6 @@
   .side-note{ font-size:12.5px; color:var(--muted); background:var(--surface); border:1px solid var(--line);
     border-radius:var(--radius-sm); padding:12px 14px; line-height:1.6; }
   .side-note b{ color:var(--accent); }
-  .side-note .esc{ color:var(--good); font-weight:700; }
   .side-back{ font-size:13px; color:var(--accent); display:inline-flex; align-items:center; gap:6px; opacity:.85; transition:.18s; }
   .side-back:hover{ opacity:1; }
 
@@ -138,7 +137,6 @@
 <body>
 <header class="topbar">
   <div class="brand">
-    <img src="shinva_logo.png" alt="SHINVA Health" class="brand-logo">
     <div class="titles">
       <h1>产品价格速查</h1>
     </div>
@@ -179,7 +177,7 @@
       </div>
       <div class="meta-bar"><span class="count">匹配 <b id="cnt">0</b> / <span id="total">0</span> 项</span></div>
     </div>
-    <div class="side-note">型号与规格一致时显示 <b>✅️</b>。聚焦搜索栏按 <span class="esc">ESC</span> 清空本栏，页面任意处按 <span class="esc">ESC</span> 重置全部。</div>
+    <div class="side-note">型号与规格一致时显示 <b>✅️</b>。</div>
     <a class="side-back" href="index.html">← 返回综合索引</a>
   </aside>
 
