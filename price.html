@@ -266,7 +266,7 @@
             <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
-          <div class="fx-src">汇率来源：<b>中国人民银行授权中国外汇交易中心公布</b> · 2026-07-31 人民币汇率中间价（1 USD = 6.7894 CNY）。今日/月初/月末为系统定值，按央行中间价、每次打开页面自动读取最新值，不可手动修改。</div>
+          <div class="fx-src">汇率来源：<b>open.er-api.com 每日参考汇率</b> · 今日/月初/月末为系统统一取值，页面每次打开自动读取最新参考汇率（联网失败回退本地缓存），不可手动修改。</div>
         </div>
       </div>
     </aside>
@@ -285,11 +285,13 @@ const $ = (id) => document.getElementById(id);
 $('total2').textContent = DATA.length;
 
 // 汇率配置：今日汇率由「每次打开页面自动读取 fx_rate.json」覆盖（RATE_CFG.today / RATE_CFG.src 是刷新锚点）
-// 铁律：主/测两账号汇率统一采用「中国人民银行授权中国外汇交易中心公布的人民币汇率中间价」
-// 更新机制：不依赖任何自动化任务，用户每次打开/登录网页界面即自动 fetch 最新央行中间价（同源 fx_rate.json，无跨域限制）
+// 汇率铁律（2026-07-31 用户放宽）：数据源不强制央行中间价 JSON 接口，只要是稳定、每日更新的媒体/机构即可
+// 更新机制：不依赖任何自动化任务；用户每次打开/登录网页界面即自动 fetch 稳定外部汇率源（带 CORS，页面端直连），失败回退同源 fx_rate.json
 const RATE_CFG = {
-  today: 6.7894,
-  src: "中国人民银行授权中国外汇交易中心公布 · 2026-07-31 人民币汇率中间价",
+  today: 6.7894,                                  // 离线兜底默认值（最后已知汇率）
+  src: "本地缓存汇率",                             // fx_rate.json 回退时的来源标注
+  liveUrl: "https://open.er-api.com/v6/latest/USD", // 稳定、每日更新、带 CORS 的汇率机构源（页面每次加载即抓取，无需自动化）
+  liveSrc: "open.er-api.com 每日参考汇率",         // 数据源标注（非央行中间价，按用户放宽要求取稳定每日更新源）
   autoUpdate: true
 };
 
@@ -535,7 +537,7 @@ document.addEventListener('keydown', e => {
     rateVals.today = val; rateVals.monthStart = val; rateVals.monthEnd = val;
     rateVal.textContent = val.toFixed(4);
     showFxVals();
-    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统定值，按央行中间价、每次打开页面自动读取最新值，不可手动修改。';
+    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统统一取值（页面每次加载自动读取最新参考汇率），固定汇率可手动覆盖，不可手动修改系统值。';
     if(active === 'today' || active === 'monthStart' || active === 'monthEnd') recalc();
   }
   // 双向换算：以最后输入的框为源，反推另一框
@@ -626,22 +628,32 @@ document.addEventListener('keydown', e => {
     });
   });
   // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保刷新锚点生效
-  // 今日/月初/月末为系统定值，仅勾选无输入框；汇率值由 rateVals 提供（applyRate 每次打开页面刷新 today）
+  // 今日/月初/月末为系统统一取值，仅勾选无输入框；汇率值由 rateVals 提供（applyRate 每次打开页面刷新 today）
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   showFxVals();
-  if(RATE_CFG.src) srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.src)+'</b> · 今日/月初/月末为系统定值，按央行中间价、每次打开页面自动读取最新值，不可手动修改。';
+  srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.liveSrc)+'</b> · 页面每次打开自动读取最新参考汇率（联网失败回退本地缓存），不可手动修改系统值。';
   applySrc(); syncMainX(); recalc();
-  // 每次打开/登录网页界面自动刷新：直接 fetch 同源 fx_rate.json（央行中间价，无跨域限制），不做当日缓存，保证每次都取最新
+  // 每次打开/登录网页界面自动刷新：优先抓取稳定、每日更新的外部汇率源（带 CORS，页面端直接 fetch，无需自动化任务）；
+  // 抓取失败则回退同源 fx_rate.json（始终可用、国内可访问），再失败回退内置兜底值。
   if(RATE_CFG.autoUpdate){
     (function autoRate(){
-      try{
-        fetch('fx_rate.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
-          if(j && j.usdCny > 0){
-            const src = (j.src || '中国人民银行授权中国外汇交易中心公布 · 人民币汇率中间价') + (j.date ? ' · ' + j.date : '');
-            applyRate(j.usdCny, src);
-          }
+      function applyLive(j, label){
+        let v = null, d = '';
+        if(j && j.rates && j.rates.CNY > 0){ v = j.rates.CNY; d = j.time_last_update_utc || ''; }
+        else if(j && j.usd && j.usd.cny > 0){ v = j.usd.cny; d = j.date || ''; }
+        if(!(v > 0)) return false;
+        applyRate(v, label + (d ? ' · ' + d : ''));
+        return true;
+      }
+      function getJson(u){ return fetch(u, {cache:'no-store'}).then(function(r){ return r.json(); }); }
+      getJson(RATE_CFG.liveUrl).then(function(j){
+        if(!applyLive(j, RATE_CFG.liveSrc)) fallbackFx();
+      }).catch(function(){ fallbackFx(); });
+      function fallbackFx(){
+        getJson('fx_rate.json').then(function(j){
+          if(j && j.usdCny > 0) applyRate(j.usdCny, (j.src || '本地缓存汇率') + (j.date ? ' · ' + j.date : ''));
         }).catch(function(){});
-      }catch(e){}
+      }
     })();
   }
 })();
