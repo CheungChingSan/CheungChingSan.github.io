@@ -99,14 +99,17 @@
   .fx-swap:hover{ transform:rotate(180deg); }
   .fx-swap:active{ transform:rotate(180deg) scale(.9); }
   .fx-rates{ display:grid; grid-template-columns:1fr 1fr; gap:9px 10px; margin-top:10px; align-items:center; }
-  .fx-rate{ display:flex; align-items:center; gap:7px; font-size:12px; color:#fff; min-height:28px; }
+  .fx-rate{ display:flex; align-items:center; gap:7px; font-size:12px; color:#fff; min-height:34px; }
   .fx-rate input[type=checkbox]{ width:15px; height:15px; accent-color:#22d3ee; cursor:pointer; flex:none; }
   .fx-rate > span.lbl{ flex:none; white-space:nowrap; }
   .fx-rate.custom{ flex-direction:row; align-items:center; gap:7px; }
   .fx-rate-head{ display:flex; align-items:center; gap:7px; }
   /* 今日/月初/月末汇率右侧数值：与标签同字号同格式，右对齐到单元格右侧 */
-  .fx-rate .fx-val{ margin-left:auto; font-size:12px; color:#fff; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.2px; }
-  .fx-rate .fx-note{ margin-left:5px; font-size:10px; font-style:normal; color:#8aa0bd; opacity:.85; white-space:nowrap; }
+  /* 系统定值数值：与固定汇率输入框同宽(72px)、同行右对齐、文本居中 → 数字中心与输入框中心共垂直轴线 */
+  .fx-rate .fx-val{ margin-left:auto; width:72px; text-align:center; font-size:12px; color:#fff; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.2px; }
+  /* 月初/月末标签 + 下方小注：标签与注分行堆叠，注置于标签正下方 */
+  .fx-rate .lbl-block{ display:flex; flex-direction:column; gap:2px; line-height:1.05; }
+  .fx-rate .fx-note{ margin-left:0; font-size:10px; font-style:normal; color:#8aa0bd; opacity:.85; white-space:nowrap; line-height:1; }
   .fx-rate .fx-note.est{ color:#7dd3fc; }
   /* 固定汇率同行输入框：字号与「固定汇率」标签一致，不换行、不放大 */
   .fx-rate.custom .fx-rate-in-wrap.sm{ width:auto; margin-left:auto; }
@@ -264,8 +267,8 @@
           </div>
           <div class="fx-rates">
             <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span><span class="fx-val" data-fxval="today">6.7894</span></label>
-            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl">月初汇率<i class="fx-note">首工作日</i></span><span class="fx-val" data-fxval="monthStart">6.7894</span></label>
-            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl">月末汇率<i class="fx-note" id="fxMonthEndNote">预估·上月末</i></span><span class="fx-val" data-fxval="monthEnd">6.7894</span></label>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl-block"><span class="lbl">月初汇率</span><i class="fx-note">首工作日</i></span><span class="fx-val" data-fxval="monthStart">6.7894</span></label>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl-block"><span class="lbl">月末汇率</span><i class="fx-note" id="fxMonthEndNote">预估·上月末</i></span><span class="fx-val" data-fxval="monthEnd">6.7894</span></label>
             <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
