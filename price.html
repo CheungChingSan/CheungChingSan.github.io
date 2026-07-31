@@ -36,8 +36,8 @@
   header.hero::after{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
     radial-gradient(78% 58% at 50% -8%, rgba(255,255,255,.14) 0%, transparent 60%); }
   header.hero .brand-block{ position:absolute; top:16px; left:16px; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
-  header.hero .brand-logo{ max-height:50px; max-width:240px; width:auto; height:auto; }
-  header.hero .chinaclock{ font-size:26px; color:#fff; font-weight:700; margin-top:2px;
+  header.hero .brand-logo{ display:block; height:50px; width:auto; max-width:240px; }
+  header.hero .chinaclock{ font-size:26px; color:#fff; font-weight:700; margin-top:2px; min-height:34px; line-height:34px; white-space:nowrap; font-variant-numeric:tabular-nums;
     font-variant-numeric:tabular-nums; letter-spacing:1px; line-height:1.1; width:100%;
     display:flex; align-items:center; white-space:nowrap; }
   header.hero .chinaclock .seg{ display:inline-block; }
@@ -185,6 +185,7 @@
       <span class="brand-title">产品价格查询</span>
     </div>
     <div class="chinaclock" id="chinaclock"></div>
+    <script>/* 同步首绘时钟，消除刷新时实时时间的位置/内容闪现 */(function(){try{var d=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());var p=String(d).split(':');var h='<span class="seg">'+p[0]+'</span><span class="colon">:</span><span class="seg">'+p[1]+'</span><span class="colon">:</span><span class="seg">'+p[2]+'</span><span class="tz">(UTC+8)</span>';var el=document.getElementById('chinaclock');if(el)el.innerHTML=h;}catch(e){}})();</script>
   </div>
   <a class="back" href="index.html">← 返回综合索引</a>
 </header>
@@ -452,17 +453,10 @@ document.querySelectorAll('.clear-x[data-clear]').forEach(btn => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { e.preventDefault(); resetAll(); }
 });
-// 左上角实时中国时间（UTC+8），与站点其它页完全一致：26px 纯白、HH:MM:SS + (UTC+8)、宽度锁定 logo 宽
+// 左上角实时中国时间（UTC+8）：26px 纯白、HH:MM:SS + (UTC+8)。首绘由内联脚本同步完成，此处仅维持每秒刷新（不再强制锁定 logo 宽，避免 logo 加载导致时钟宽度抖动闪现）
 (function(){
   const el = $('chinaclock');
   if(!el) return;
-  function sizeToLogo(){
-    const lg = document.querySelector('header.hero .brand-logo');
-    if(!lg) return;
-    let w = lg.offsetWidth;
-    if(!w){ const mw = parseFloat(getComputedStyle(lg).maxWidth); if(mw) w = mw; }
-    if(w) el.style.width = w + 'px';
-  }
   function fmt(){
     try { return new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date()); }
     catch(e){ return '--:--:--'; }
@@ -478,9 +472,6 @@ document.addEventListener('keydown', e => {
       + '<span class="tz">(UTC+8)</span>';
   }
   tick(); setInterval(tick, 1000);
-  const lg = document.querySelector('header.hero .brand-logo');
-  if(lg){ if(lg.complete) sizeToLogo(); else lg.addEventListener('load', sizeToLogo); }
-  window.addEventListener('resize', sizeToLogo);
 })();
 // ===== 产品单价 × 产品数量 = 产品总价（只读，千分位）=====
 (function(){
@@ -546,7 +537,7 @@ document.addEventListener('keydown', e => {
     if(!(val > 0)) return;
     RATE_CFG.today = val; rateVals.today = val;
     rateVal.textContent = val.toFixed(4);
-    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b>';
+    // 来源说明保持初始化时的静态文案（汇率来源：今日=…；月初/月末=…），不在每次抓取时改写，避免刷新闪现不同描述
     if(active === 'today') recalc();
   }
   // 月初汇率：当月首个工作日参考汇率（网络取值成功时覆盖离线兜底）
