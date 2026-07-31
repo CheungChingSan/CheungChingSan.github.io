@@ -108,17 +108,17 @@
   .fx-rate-head{ display:flex; align-items:center; gap:7px; }
   /* 今日/月初/月末汇率右侧数值：与标签同字号同格式，右对齐到单元格右侧 */
   /* 系统定值数值：与固定汇率输入框同宽(72px)、同行右对齐、文本居中 → 数字中心与输入框中心共垂直轴线 */
-  .fx-rate .fx-val{ margin-left:auto; width:72px; text-align:center; font-size:12px; color:#fff; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.2px; }
+  .fx-rate .fx-val{ margin-left:auto; width:60px; text-align:center; font-size:12px; color:#fff; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.2px; }
   /* 月初/月末标签 + 下方小注：标签与注分行堆叠，注置于标签正下方 */
   .fx-rate .lbl-block{ position:relative; display:inline-flex; align-items:center; }
   .fx-rate .fx-note{ position:absolute; top:100%; left:0; margin-top:2px; font-size:10px; font-style:normal; color:#8aa0bd; opacity:.85; white-space:nowrap; line-height:1; }
   .fx-rate .fx-note.est{ color:#7dd3fc; }
   /* 固定汇率同行输入框：字号与「固定汇率」标签一致，不换行、不放大 */
   .fx-rate.custom .fx-rate-in-wrap.sm{ width:auto; margin-left:auto; }
-  .fx-rate-in-sm{ width:72px; padding:3px 16px 3px 7px; border-radius:8px; font-size:12px; text-align:center; color:var(--text);
+  .fx-rate-in-sm{ width:60px; padding:3px 14px 3px 7px; border-radius:8px; font-size:12px; text-align:center; color:var(--text);
     background:rgba(255,255,255,.06); border:1px solid var(--sky); outline:none; font-variant-numeric:tabular-nums; }
   .fx-rate-in-sm:focus{ border-color:var(--sky); }
-  .fx-rate-in-wrap.sm .clear-x{ right:3px; width:14px; height:14px; font-size:11px; }
+  .fx-rate-in-wrap.sm .clear-x{ right:2px; width:12px; height:12px; font-size:9px; }
   .fx-rate-in-wrap{ position:relative; display:flex; align-items:center; width:100%; }
   .fx-rate-in{ width:100%; padding:11px 26px 11px 13px; border-radius:11px; font-size:15px; text-align:center; color:var(--text);
     background:rgba(255,255,255,.05); border:1px solid var(--sky); outline:none; font-variant-numeric:tabular-nums; }
