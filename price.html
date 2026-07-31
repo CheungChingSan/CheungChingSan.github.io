@@ -221,6 +221,13 @@ const DATA = [{"code": "HS00001", "name": "高频手术设备", "fields": {"规�
 const $ = (id) => document.getElementById(id);
 $('total2').textContent = DATA.length;
 
+// 汇率配置：今日汇率由「每日自动更新」覆盖（RATE_CFG.today / RATE_CFG.src 是自动刷新锚点，便于 CI 稳定替换）
+const RATE_CFG = {
+  today: 6.7894,
+  src: "中国外汇交易中心 2026-07-31 中间价",
+  autoUpdate: true
+};
+
 const qCode = $('qCode'), qName = $('qName'), qSpec = $('qSpec'), qModel = $('qModel');
 const results = $('results'), emptyEl = $('empty');
 
@@ -357,18 +364,19 @@ document.addEventListener('keydown', e => {
   if(lg){ if(lg.complete) sizeToLogo(); else lg.addEventListener('load', sizeToLogo); }
   window.addEventListener('resize', sizeToLogo);
 })();
-// ===== 汇率换算 =====
+// ===== 汇率换算（含每日自动刷新）=====
 (function(){
   const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), usdField = $('fxFieldUsd'), rmbField = $('fxFieldRmb');
   const swapBtn = $('fxSwap'), rateVal = $('fxRateVal'), row = document.querySelector('.fx-row');
   const rateIns = { today:$('fxToday'), monthStart:$('fxMonthStart'), monthEnd:$('fxMonthEnd'), custom:$('fxCustom') };
+  const srcEl = document.querySelector('.fx-src');
   const checks = {};
   document.querySelectorAll('.fx-check').forEach(c => checks[c.dataset.rate] = c);
   let reversed = false;   // false：RMB 在左(源)；true：USD 在左(源)
   let active = 'today';    // 当前生效的汇率键
   function rate(){
     const v = parseFloat(rateIns[active].value);
-    return (isFinite(v) && v > 0) ? v : 6.7894;
+    return (isFinite(v) && v > 0) ? v : (RATE_CFG.today || 6.7894);
   }
   function leftIn(){ return reversed ? usdIn : rmbIn; }
   function rightIn(){ return reversed ? rmbIn : usdIn; }
@@ -377,6 +385,14 @@ document.addEventListener('keydown', e => {
   function applyDir(){
     leftIn().readOnly = false; rightIn().readOnly = true;
     leftField().classList.add('src'); rightField().classList.remove('src');
+  }
+  function applyRate(val, srcText){
+    if(!(val > 0)) return;
+    RATE_CFG.today = val;
+    rateIns.today.value = val.toFixed(4);
+    rateVal.textContent = val.toFixed(4);
+    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b>，每日自动更新。';
+    if(active === 'today') recalc();
   }
   function recalc(){
     rateVal.textContent = rate().toFixed(4);
@@ -409,7 +425,36 @@ document.addEventListener('keydown', e => {
   Object.keys(rateIns).forEach(k => {
     rateIns[k].addEventListener('input', () => { if(active === k) recalc(); });
   });
+  // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保每日自动更新锚点生效
+  rateIns.today.value = RATE_CFG.today;
+  rateVal.textContent = RATE_CFG.today.toFixed(4);
+  if(RATE_CFG.src) srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.src)+'</b>，每日自动更新。';
   applyDir(); recalc();
+  // 每日自动刷新：打开页面时若当天(UTC+8)尚未拉取，则请求实时汇率并缓存到 localStorage
+  if(RATE_CFG.autoUpdate){
+    (function autoRate(){
+      function today8(){
+        try { const a = new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).split('/'); return a.length===3 ? a[0]+'-'+a[1]+'-'+a[2] : ''; }
+        catch(e){ return ''; }
+      }
+      const key = 'fx_auto_rate_v1';
+      const d = today8();
+      try{
+        const c = JSON.parse(localStorage.getItem(key) || 'null');
+        if(c && c.date === d && c.val > 0){ applyRate(c.val, c.src); return; }
+      }catch(e){}
+      try{
+        fetch('https://open.er-api.com/v6/latest/USD').then(function(r){ return r.json(); }).then(function(j){
+          if(j && j.result === 'success' && j.rates && j.rates.CNY > 0){
+            const v = j.rates.CNY;
+            const src = 'ExchangeRate-API（open.er-api.com）· ' + d;
+            applyRate(v, src);
+            try{ localStorage.setItem(key, JSON.stringify({date:d, val:v, src:src})); }catch(e){}
+          }
+        }).catch(function(){});
+      }catch(e){}
+    })();
+  }
 })();
 // 初始展示全部
 filter();
