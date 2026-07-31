@@ -106,6 +106,8 @@
   .fx-rate-head{ display:flex; align-items:center; gap:7px; }
   /* 今日/月初/月末汇率右侧数值：与标签同字号同格式，右对齐到单元格右侧 */
   .fx-rate .fx-val{ margin-left:auto; font-size:12px; color:#fff; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.2px; }
+  .fx-rate .fx-note{ margin-left:5px; font-size:10px; font-style:normal; color:#8aa0bd; opacity:.85; white-space:nowrap; }
+  .fx-rate .fx-note.est{ color:#7dd3fc; }
   /* 固定汇率同行输入框：字号与「固定汇率」标签一致，不换行、不放大 */
   .fx-rate.custom .fx-rate-in-wrap.sm{ width:auto; margin-left:auto; }
   .fx-rate-in-sm{ width:72px; padding:3px 16px 3px 7px; border-radius:8px; font-size:12px; text-align:center; color:var(--text);
@@ -125,6 +127,7 @@
   .fx-note b{ color:var(--accent); font-weight:700; }
   .fx-src{ font-size:11px; color:#6b7c96; margin-top:6px; line-height:1.4; }
   .fx-src b{ color:#9fb0c8; font-weight:600; }
+  .fx-disc{ font-size:10px; color:#e0a458; margin-top:4px; line-height:1.4; }
   /* 结果 */
   .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(312px,1fr)); gap:12px; }
   .card{ position:relative; background:var(--panel2); border:1px solid var(--line); border-left:4px solid var(--brand);
@@ -261,12 +264,13 @@
           </div>
           <div class="fx-rates">
             <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span><span class="fx-val" data-fxval="today">6.7894</span></label>
-            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl">月初汇率</span><span class="fx-val" data-fxval="monthStart">6.7894</span></label>
-            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl">月末汇率</span><span class="fx-val" data-fxval="monthEnd">6.7894</span></label>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl">月初汇率<i class="fx-note">首工作日</i></span><span class="fx-val" data-fxval="monthStart">6.7894</span></label>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl">月末汇率<i class="fx-note" id="fxMonthEndNote">预估·上月末</i></span><span class="fx-val" data-fxval="monthEnd">6.7894</span></label>
             <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
-          <div class="fx-src">汇率来源：<b>open.er-api.com 每日参考汇率</b> · 今日/月初/月末为系统统一取值，页面每次打开自动读取最新参考汇率（联网失败回退本地缓存）。</div>
+          <div class="fx-src">汇率来源：今日=<b>open.er-api.com 每日参考汇率</b>；月初/月末=<b>fawazahmed0 历史汇率</b>（按业务规则取首/末工作日，均每次打开页面自动读取）。</div>
+          <div class="fx-disc">预估月末汇率仅供内部经营测算参考，不作为账务处理依据。</div>
         </div>
       </div>
     </aside>
@@ -288,10 +292,14 @@ $('total2').textContent = DATA.length;
 // 汇率铁律（2026-07-31 用户放宽）：数据源不强制央行中间价 JSON 接口，只要是稳定、每日更新的媒体/机构即可
 // 更新机制：不依赖任何自动化任务；用户每次打开/登录网页界面即自动 fetch 稳定外部汇率源（带 CORS，页面端直连），失败回退同源 fx_rate.json
 const RATE_CFG = {
-  today: 6.7894,                                  // 离线兜底默认值（最后已知汇率）
+  today: 6.7894,                                  // 今日参考汇率离线兜底默认（最后已知）
+  monthStart: 6.7941,                             // 月初汇率离线兜底（2026-07-01 首工作日参考值）
+  monthEnd: 6.7923,                               // 月末汇率离线兜底（2026-06-30 上月末参考值）
   src: "本地缓存汇率",                             // fx_rate.json 回退时的来源标注
-  liveUrl: "https://open.er-api.com/v6/latest/USD", // 稳定、每日更新、带 CORS 的汇率机构源（页面每次加载即抓取，无需自动化）
+  liveUrl: "https://open.er-api.com/v6/latest/USD",                 // 今日：稳定、每日更新、带 CORS
   liveSrc: "open.er-api.com 每日参考汇率",         // 数据源标注（非央行中间价，按用户放宽要求取稳定每日更新源）
+  histUrl: "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{date}/v1/currencies/usd.json", // 历史汇率(按日期) 带 CORS
+  histSrc: "fawazahmed0 历史汇率",                // 月初/月末历史汇率源标注
   autoUpdate: true
 };
 
@@ -530,15 +538,28 @@ document.addEventListener('keydown', e => {
       sp.textContent = (isFinite(v) && v > 0) ? v.toFixed(4) : '';
     });
   }
-  // 实时汇率刷新：今日 / 月初 / 月末 同步为当日实时值（固定汇率保持手动值）
-  function applyRate(val, srcText){
+  // 今日参考汇率刷新（仅更新 today；月初/月末按业务规则独立取值，不再与今日强制相等）
+  function applyToday(val, srcText){
     if(!(val > 0)) return;
-    RATE_CFG.today = val;
-    rateVals.today = val; rateVals.monthStart = val; rateVals.monthEnd = val;
+    RATE_CFG.today = val; rateVals.today = val;
     rateVal.textContent = val.toFixed(4);
+    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日参考汇率每次打开页面自动读取；月初/月末按业务规则独立取值（见标注）。';
+    if(active === 'today') recalc();
+  }
+  // 月初汇率：当月首个工作日参考汇率（网络取值成功时覆盖离线兜底）
+  function applyMonthStart(val){
+    if(!(val > 0)) return;
+    RATE_CFG.monthStart = val; rateVals.monthStart = val; showFxVals();
+    if(active === 'monthStart') recalc();
+  }
+  // 月末汇率：isEstimate=true 表示当月未结束、暂用上月末汇率作为预估；false 表示已取得当月真实末工作日汇率
+  function applyMonthEnd(val, isEstimate){
+    if(!(val > 0)) return;
+    RATE_CFG.monthEnd = val; rateVals.monthEnd = val;
+    const note = document.getElementById('fxMonthEndNote');
+    if(note) note.textContent = isEstimate ? '预估·上月末' : '实际·当月末';
     showFxVals();
-    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统统一取值（页面每次加载自动读取最新参考汇率），固定汇率可手动覆盖。';
-    if(active === 'today' || active === 'monthStart' || active === 'monthEnd') recalc();
+    if(active === 'monthEnd') recalc();
   }
   // 双向换算：以最后输入的框为源，反推另一框
   function recalc(){
@@ -631,29 +652,49 @@ document.addEventListener('keydown', e => {
   // 今日/月初/月末为系统统一取值，仅勾选无输入框；汇率值由 rateVals 提供（applyRate 每次打开页面刷新 today）
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   showFxVals();
-  srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.liveSrc)+'</b> · 页面每次打开自动读取最新参考汇率（联网失败回退本地缓存）。';
+  srcEl.innerHTML = '汇率来源：今日=<b>'+esc(RATE_CFG.liveSrc)+'</b>；月初/月末=<b>'+esc(RATE_CFG.histSrc)+'</b>（每次打开页面自动读取）。';
   applySrc(); syncMainX(); recalc();
-  // 每次打开/登录网页界面自动刷新：优先抓取稳定、每日更新的外部汇率源（带 CORS，页面端直接 fetch，无需自动化任务）；
-  // 抓取失败则回退同源 fx_rate.json（始终可用、国内可访问），再失败回退内置兜底值。
+  // 每次打开/登录网页界面自动刷新（无自动化任务）：今日抓实时源；月初/月末按业务规则抓历史汇率源
   if(RATE_CFG.autoUpdate){
     (function autoRate(){
-      function applyLive(j, label){
-        let v = null, d = '';
-        if(j && j.rates && j.rates.CNY > 0){ v = j.rates.CNY; d = j.time_last_update_utc || ''; }
-        else if(j && j.usd && j.usd.cny > 0){ v = j.usd.cny; d = j.date || ''; }
-        if(!(v > 0)) return false;
-        applyRate(v, label + (d ? ' · ' + d : ''));
-        return true;
+      const now = new Date();
+      const curY = now.getFullYear(), curM = now.getMonth();
+      function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+      function isWeekend(d){ const g=d.getDay(); return g===0||g===6; }
+      function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+      function firstWorkday(y,m){ let d=new Date(y,m,1); while(isWeekend(d)) d=addDays(d,1); return d; }
+      function lastWorkday(y,m){ let d=new Date(y,m+1,0); while(isWeekend(d)) d=addDays(d,-1); return d; }
+      function prevMonthLast(y,m){ let d=new Date(y,m,0); while(isWeekend(d)) d=addDays(d,-1); return d; }
+      // 历史汇率抓取：从指定日期起向前回退最多 7 天，取最近一个已发布的工作日汇率（兼容周末/节假日无数据）
+      function fetchHist(dateObj, onOk, onFail){
+        let tries=0;
+        (function step(d){
+          const url = RATE_CFG.histUrl.replace('{date}', fmtDate(d));
+          fetch(url, {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
+            if(j && j.usd && j.usd.cny > 0){ onOk(j.usd.cny); } else { throw 0; }
+          }).catch(function(){
+            if(++tries < 7) step(addDays(d,-1)); else if(onFail) onFail();
+          });
+        })(dateObj);
       }
-      function getJson(u){ return fetch(u, {cache:'no-store'}).then(function(r){ return r.json(); }); }
-      getJson(RATE_CFG.liveUrl).then(function(j){
-        if(!applyLive(j, RATE_CFG.liveSrc)) fallbackFx();
-      }).catch(function(){ fallbackFx(); });
-      function fallbackFx(){
-        getJson('fx_rate.json').then(function(j){
-          if(j && j.usdCny > 0) applyRate(j.usdCny, (j.src || '本地缓存汇率') + (j.date ? ' · ' + j.date : ''));
+      // 今日：实时源（open.er-api / fawazahmed0 双形态），失败回退同源 fx_rate.json
+      function applyLiveToday(j){
+        let v=null;
+        if(j && j.rates && j.rates.CNY>0) v=j.rates.CNY;
+        else if(j && j.usd && j.usd.cny>0) v=j.usd.cny;
+        if(v>0) applyToday(v, RATE_CFG.liveSrc + (j.date||j.time_last_update_utc ? ' · '+(j.date||j.time_last_update_utc) : ''));
+      }
+      fetch(RATE_CFG.liveUrl, {cache:'no-store'}).then(function(r){ return r.json(); }).then(applyLiveToday).catch(function(){
+        fetch('fx_rate.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
+          if(j && j.usdCny>0) applyToday(j.usdCny, (j.src||'本地缓存汇率')+(j.date?' · '+j.date:''));
         }).catch(function(){});
-      }
+      });
+      // 月初：当月首个工作日汇率（网络取值成功时覆盖离线兜底）
+      fetchHist(firstWorkday(curY,curM), function(v){ applyMonthStart(v); }, function(){});
+      // 月末：当月已至末工作日→取实际末工作日汇率；否则（月度期间）暂用上月末汇率作为预估
+      const lw = lastWorkday(curY,curM);
+      if(now > lw){ fetchHist(lw, function(v){ applyMonthEnd(v,false); }, function(){}); }
+      else { fetchHist(prevMonthLast(curY,curM), function(v){ applyMonthEnd(v,true); }, function(){}); }
     })();
   }
 })();
