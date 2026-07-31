@@ -102,8 +102,16 @@
   .fx-rate{ display:flex; align-items:center; gap:7px; font-size:12px; color:#fff; }
   .fx-rate input[type=checkbox]{ width:15px; height:15px; accent-color:#22d3ee; cursor:pointer; flex:none; }
   .fx-rate > span.lbl{ flex:none; white-space:nowrap; }
-  .fx-rate.custom{ flex-direction:column; align-items:stretch; gap:6px; }
+  .fx-rate.custom{ flex-direction:row; align-items:center; gap:7px; }
   .fx-rate-head{ display:flex; align-items:center; gap:7px; }
+  /* 今日/月初/月末汇率右侧数值：与标签同字号同格式，右对齐到单元格右侧 */
+  .fx-rate .fx-val{ margin-left:auto; font-size:12px; color:#fff; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.2px; }
+  /* 固定汇率同行输入框：字号与「固定汇率」标签一致，不换行、不放大 */
+  .fx-rate.custom .fx-rate-in-wrap.sm{ width:auto; margin-left:auto; }
+  .fx-rate-in-sm{ width:72px; padding:3px 16px 3px 7px; border-radius:8px; font-size:12px; text-align:center; color:var(--text);
+    background:rgba(255,255,255,.06); border:1px solid var(--sky); outline:none; font-variant-numeric:tabular-nums; }
+  .fx-rate-in-sm:focus{ border-color:var(--sky); }
+  .fx-rate-in-wrap.sm .clear-x{ right:3px; width:14px; height:14px; font-size:11px; }
   .fx-rate-in-wrap{ position:relative; display:flex; align-items:center; width:100%; }
   .fx-rate-in{ width:100%; padding:11px 26px 11px 13px; border-radius:11px; font-size:15px; text-align:center; color:var(--text);
     background:rgba(255,255,255,.05); border:1px solid var(--sky); outline:none; font-variant-numeric:tabular-nums; }
@@ -252,14 +260,13 @@
             </div>
           </div>
           <div class="fx-rates">
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span></div>
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl">月初汇率</span></div>
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl">月末汇率</span></div>
-            <div class="fx-rate custom"><label class="fx-rate-head"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span></label>
-              <span class="fx-rate-in-wrap"><input id="fxCustom" class="fx-rate-in" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></div>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span><span class="fx-val" data-fxval="today">6.7894</span></label>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl">月初汇率</span><span class="fx-val" data-fxval="monthStart">6.7894</span></label>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl">月末汇率</span><span class="fx-val" data-fxval="monthEnd">6.7894</span></label>
+            <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
-          <div class="fx-src">汇率来源：<b>中国人民银行授权中国外汇交易中心公布</b> · 2026-07-31 人民币汇率中间价（1 USD = 6.7894 CNY）。今日/月初/月末为系统定值，按央行中间价每日自动更新，不可手动修改。</div>
+          <div class="fx-src">汇率来源：<b>中国人民银行授权中国外汇交易中心公布</b> · 2026-07-31 人民币汇率中间价（1 USD = 6.7894 CNY）。今日/月初/月末为系统定值，按央行中间价、每次打开页面自动读取最新值，不可手动修改。</div>
         </div>
       </div>
     </aside>
@@ -277,8 +284,9 @@ const DATA = [{"code": "HS00001", "name": "高频手术设备", "fields": {"规�
 const $ = (id) => document.getElementById(id);
 $('total2').textContent = DATA.length;
 
-// 汇率配置：今日汇率由「每日自动更新」覆盖（RATE_CFG.today / RATE_CFG.src 是自动刷新锚点，便于每日自动化稳定替换）
-// 铁律：主/测两账号汇率统一采用「中国人民银行授权中国外汇交易中心公布的人民币汇率中间价」，每日至少更新 1 次
+// 汇率配置：今日汇率由「每次打开页面自动读取 fx_rate.json」覆盖（RATE_CFG.today / RATE_CFG.src 是刷新锚点）
+// 铁律：主/测两账号汇率统一采用「中国人民银行授权中国外汇交易中心公布的人民币汇率中间价」
+// 更新机制：不依赖任何自动化任务，用户每次打开/登录网页界面即自动 fetch 最新央行中间价（同源 fx_rate.json，无跨域限制）
 const RATE_CFG = {
   today: 6.7894,
   src: "中国人民银行授权中国外汇交易中心公布 · 2026-07-31 人民币汇率中间价",
@@ -489,7 +497,7 @@ document.addEventListener('keydown', e => {
     b.addEventListener('click', () => clearCalc(b.dataset.calcclr)));
   calc();
 })();
-// ===== 汇率换算（双向输入 · 每日自动刷新）=====
+// ===== 汇率换算（双向输入 · 每次打开页面自动刷新）=====
 (function(){
   const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), usdField = $('fxFieldUsd'), rmbField = $('fxFieldRmb');
   const swapBtn = $('fxSwap'), rateVal = $('fxRateVal'), row = document.querySelector('.fx-row');
@@ -512,13 +520,22 @@ document.addEventListener('keydown', e => {
     rmbField.classList.toggle('src', lastEdited === 'rmb');
     usdField.classList.toggle('src', lastEdited === 'usd');
   }
+  // 把今日/月初/月末汇率值同步到界面右侧数值显示
+  function showFxVals(){
+    document.querySelectorAll('[data-fxval]').forEach(function(sp){
+      const k = sp.dataset.fxval;
+      const v = rateVals[k];
+      sp.textContent = (isFinite(v) && v > 0) ? v.toFixed(4) : '';
+    });
+  }
   // 实时汇率刷新：今日 / 月初 / 月末 同步为当日实时值（固定汇率保持手动值）
   function applyRate(val, srcText){
     if(!(val > 0)) return;
     RATE_CFG.today = val;
     rateVals.today = val; rateVals.monthStart = val; rateVals.monthEnd = val;
     rateVal.textContent = val.toFixed(4);
-    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统定值，按央行中间价每日自动更新，不可手动修改。';
+    showFxVals();
+    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统定值，按央行中间价、每次打开页面自动读取最新值，不可手动修改。';
     if(active === 'today' || active === 'monthStart' || active === 'monthEnd') recalc();
   }
   // 双向换算：以最后输入的框为源，反推另一框
@@ -608,31 +625,20 @@ document.addEventListener('keydown', e => {
       if(active === 'custom') recalc();   // 仅固定汇率有 [×]，清空后回退当前生效汇率
     });
   });
-  // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保每日自动更新锚点生效
-  // 今日/月初/月末为系统定值，仅勾选无输入框；汇率值由 rateVals 提供（applyRate 每日刷新 today）
+  // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保刷新锚点生效
+  // 今日/月初/月末为系统定值，仅勾选无输入框；汇率值由 rateVals 提供（applyRate 每次打开页面刷新 today）
   rateVal.textContent = RATE_CFG.today.toFixed(4);
-  if(RATE_CFG.src) srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.src)+'</b> · 今日/月初/月末为系统定值，每日自动更新，不可手动修改。';
+  showFxVals();
+  if(RATE_CFG.src) srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.src)+'</b> · 今日/月初/月末为系统定值，按央行中间价、每次打开页面自动读取最新值，不可手动修改。';
   applySrc(); syncMainX(); recalc();
-  // 每日自动刷新：打开页面时若当天(UTC+8)尚未拉取，则请求实时汇率并缓存到 localStorage
+  // 每次打开/登录网页界面自动刷新：直接 fetch 同源 fx_rate.json（央行中间价，无跨域限制），不做当日缓存，保证每次都取最新
   if(RATE_CFG.autoUpdate){
     (function autoRate(){
-      function today8(){
-        try { const a = new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).split('/'); return a.length===3 ? a[0]+'-'+a[1]+'-'+a[2] : ''; }
-        catch(e){ return ''; }
-      }
-      const key = 'fx_auto_rate_v1';
-      const d = today8();
-      try{
-        const c = JSON.parse(localStorage.getItem(key) || 'null');
-        if(c && c.date === d && c.val > 0){ applyRate(c.val, c.src); return; }
-      }catch(e){}
-      // 央行人民币汇率中间价：同源 fx_rate.json（每日自动化从官方渠道抓取并部署，权威且可跨域）
       try{
         fetch('fx_rate.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
           if(j && j.usdCny > 0){
             const src = (j.src || '中国人民银行授权中国外汇交易中心公布 · 人民币汇率中间价') + (j.date ? ' · ' + j.date : '');
             applyRate(j.usdCny, src);
-            try{ localStorage.setItem(key, JSON.stringify({date:d, val:j.usdCny, src:src})); }catch(e){}
           }
         }).catch(function(){});
       }catch(e){}
