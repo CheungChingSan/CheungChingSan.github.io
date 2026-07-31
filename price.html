@@ -74,26 +74,31 @@
   /* 汇率换算模块（位于搜索栏下方） */
   .fx{ margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
   .fx-title{ font-size:12px; font-weight:700; color:#fff; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.3); margin-bottom:10px; }
-  .fx-row{ display:flex; align-items:center; gap:8px; }
-  .fx-row.reversed{ flex-direction:row-reverse; }
-  .fx-field{ position:relative; flex:1 1 0; min-width:0; display:flex; align-items:center;
-    background:rgba(2,6,23,.5); border:1px solid var(--line); border-radius:11px; padding:0 10px; transition:.18s; }
-  .fx-field.src{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); }
-  .fx-field input{ width:100%; min-width:0; border:0; background:transparent; color:var(--text); font-size:14px; padding:10px 4px; outline:none; font-variant-numeric:tabular-nums; }
+  .fx-row{ display:flex; flex-direction:column; align-items:stretch; gap:6px; }
+  .fx-row.reversed{ flex-direction:column-reverse; }
+  .fx-field{ position:relative; display:flex; flex-direction:column; }
+  .fx-label{ font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.5px; margin-bottom:3px; }
+  .fx-inputwrap{ position:relative; display:flex; align-items:center; }
+  .fx-field input{ width:100%; min-width:0; border:1px solid var(--line); background:rgba(2,6,23,.5); color:var(--text); font-size:15px; padding:10px 38px 10px 12px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; transition:.18s; }
   .fx-field input::placeholder{ color:#5b6b85; }
   .fx-field input[readonly]{ color:#9fb3cf; }
-  .fx-unit{ font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.5px; padding-left:5px; white-space:nowrap; }
-  .fx-swap{ flex:none; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:16px; line-height:1;
-    color:#fff; background:linear-gradient(135deg,var(--accent),var(--sky)); border:0; box-shadow:0 4px 14px rgba(14,165,233,.3); transition:transform .25s ease; }
-  .fx-swap:hover{ transform:rotate(180deg) scale(1.06); }
-  .fx-swap:active{ transform:rotate(180deg) scale(.94); }
+  .fx-field.src input{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); }
+  .fx-field.src .fx-label{ color:var(--sky); }
+  /* 切换按钮：单纯曲形双箭头符号，不要圆圈背景 */
+  .fx-swap{ align-self:center; flex:none; background:transparent; border:0; padding:3px; cursor:pointer; color:var(--accent);
+    display:flex; align-items:center; justify-content:center; line-height:0; transition:transform .25s ease; }
+  .fx-swap:hover{ transform:rotate(180deg); }
+  .fx-swap:active{ transform:rotate(180deg) scale(.9); }
   .fx-rates{ display:flex; flex-direction:column; gap:7px; margin-top:12px; }
   .fx-rate{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:#fff; }
   .fx-rate input[type=checkbox]{ width:15px; height:15px; accent-color:#22d3ee; cursor:pointer; flex:none; }
-  .fx-rate span{ flex:1 1 auto; white-space:nowrap; }
-  .fx-rate-in{ width:62px; padding:5px 7px; border-radius:8px; font-size:12px; text-align:right; color:var(--text);
+  .fx-rate > span.lbl{ flex:1 1 auto; white-space:nowrap; }
+  .fx-rate-in-wrap{ position:relative; display:inline-flex; align-items:center; }
+  .fx-rate-in{ width:62px; padding:5px 26px 5px 7px; border-radius:8px; font-size:12px; text-align:right; color:var(--text);
     background:rgba(2,6,23,.5); border:1px solid var(--line); outline:none; font-variant-numeric:tabular-nums; }
   .fx-rate-in:focus{ border-color:var(--sky); }
+  .fx-rate-in-wrap .clear-x{ width:17px; height:17px; font-size:12px; right:5px; }
+  .fx-inputwrap.has-val .clear-x, .fx-rate-in-wrap.has-val .clear-x{ display:flex; }
   .fx-note{ margin-top:10px; font-size:11.5px; color:var(--muted); }
   .fx-note b{ color:var(--accent); font-weight:700; }
   .fx-src{ font-size:11px; color:#6b7c96; margin-top:6px; line-height:1.4; }
@@ -187,20 +192,32 @@
           <div class="fx-title">汇率换算</div>
           <div class="fx-row">
             <div class="fx-field" id="fxFieldRmb">
-              <input id="fxRmb" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
-              <span class="fx-unit">RMB</span>
+              <span class="fx-label">RMB</span>
+              <div class="fx-inputwrap">
+                <input id="fxRmb" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+                <button type="button" class="clear-x" data-fxclr="main" title="清空" aria-label="清空">×</button>
+              </div>
             </div>
-            <button type="button" class="fx-swap" id="fxSwap" title="点击切换 RMB / USD 位置与换算方向" aria-label="切换 RMB / USD">⇄</button>
+            <button type="button" class="fx-swap" id="fxSwap" title="点击切换 RMB / USD 位置与换算方向" aria-label="切换 RMB / USD">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg>
+            </button>
             <div class="fx-field" id="fxFieldUsd">
-              <input id="fxUsd" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
-              <span class="fx-unit">USD</span>
+              <span class="fx-label">USD</span>
+              <div class="fx-inputwrap">
+                <input id="fxUsd" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+                <button type="button" class="clear-x" data-fxclr="main" title="清空" aria-label="清空">×</button>
+              </div>
             </div>
           </div>
           <div class="fx-rates">
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span>今日汇率</span><input id="fxToday" class="fx-rate-in" type="text" inputmode="decimal" value="6.7894"></div>
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span>月初汇率</span><input id="fxMonthStart" class="fx-rate-in" type="text" inputmode="decimal" value="7.18"></div>
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span>月末汇率</span><input id="fxMonthEnd" class="fx-rate-in" type="text" inputmode="decimal" value="7.22"></div>
-            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="custom"><span>固定汇率</span><input id="fxCustom" class="fx-rate-in" type="text" inputmode="decimal" value="6.88"></div>
+            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span>
+              <span class="fx-rate-in-wrap"><input id="fxToday" class="fx-rate-in" type="text" inputmode="decimal" value="6.7894"><button type="button" class="clear-x" data-fxclr="fxToday" title="清空" aria-label="清空">×</button></span></div>
+            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl">月初汇率</span>
+              <span class="fx-rate-in-wrap"><input id="fxMonthStart" class="fx-rate-in" type="text" inputmode="decimal" value="7.18"><button type="button" class="clear-x" data-fxclr="fxMonthStart" title="清空" aria-label="清空">×</button></span></div>
+            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl">月末汇率</span>
+              <span class="fx-rate-in-wrap"><input id="fxMonthEnd" class="fx-rate-in" type="text" inputmode="decimal" value="7.22"><button type="button" class="clear-x" data-fxclr="fxMonthEnd" title="清空" aria-label="清空">×</button></span></div>
+            <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span>
+              <span class="fx-rate-in-wrap"><input id="fxCustom" class="fx-rate-in" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></div>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
           <div class="fx-src">汇率来源：<b>中国外汇交易中心</b> 2026-07-31 中间价（1 USD = 6.7894 CNY），可手动修改。</div>
@@ -372,7 +389,7 @@ document.addEventListener('keydown', e => {
   const srcEl = document.querySelector('.fx-src');
   const checks = {};
   document.querySelectorAll('.fx-check').forEach(c => checks[c.dataset.rate] = c);
-  let reversed = false;   // false：RMB 在左(源)；true：USD 在左(源)
+  let reversed = false;   // false：RMB 在上(源)；true：USD 在上(源)
   let active = 'today';    // 当前生效的汇率键
   function rate(){
     const v = parseFloat(rateIns[active].value);
@@ -402,13 +419,32 @@ document.addEventListener('keydown', e => {
     else rv = isFinite(lv) ? lv * rate() : NaN;                     // USD -> RMB
     rightIn().value = isFinite(rv) ? rv.toFixed(2) : '';
   }
-  [usdIn, rmbIn].forEach(inp => inp.addEventListener('input', recalc));
+  // 主输入框（RMB/USD）[×] 显隐：任一有值即两个框都显示
+  function syncMainX(){
+    const on = (rmbIn.value !== '' || usdIn.value !== '');
+    [rmbIn, usdIn].forEach(inp => {
+      const w = inp.closest('.fx-inputwrap');
+      if(w) w.classList.toggle('has-val', on);
+    });
+  }
+  // 清空 RMB/USD 两个换算框
+  function clearFxMain(){
+    rmbIn.value = ''; usdIn.value = '';
+    syncMainX(); recalc();
+  }
+  [usdIn, rmbIn].forEach(inp => inp.addEventListener('input', () => { syncMainX(); recalc(); }));
+  // 主输入框 ESC：仅清空换算区，stopPropagation 避免与全局重置冲突
+  [usdIn, rmbIn].forEach(inp => inp.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){ e.stopPropagation(); clearFxMain(); }
+  }));
+  document.querySelectorAll('[data-fxclr="main"]').forEach(b => b.addEventListener('click', clearFxMain));
   swapBtn.addEventListener('click', () => {
-    const prevOut = rightIn().value;          // 切换前右侧(结果)值
+    const prevOut = rightIn().value;          // 切换前下方(结果)值
     reversed = !reversed;
     row.classList.toggle('reversed', reversed);
     leftIn().value = prevOut;                 // 原结果转为新源，保持数值连续
     rightIn().value = '';
+    syncMainX();
     applyDir(); recalc();
   });
   Object.keys(checks).forEach(k => {
@@ -416,20 +452,55 @@ document.addEventListener('keydown', e => {
       if(checks[k].checked){
         active = k;
         Object.keys(checks).forEach(j => { if(j !== k) checks[j].checked = false; });
+        if(k === 'custom' && rateIns.custom.value.trim() === '') rateIns.custom.value = '7.00';  // 固定汇率勾选默认 7.00
         recalc();
       } else if(active === k){
         active = 'today'; checks['today'].checked = true; recalc();   // 不允许全部取消：回退今日汇率
       }
     });
   });
+  // 固定汇率：聚焦且仍为默认 7.00 时自动清空，方便输入
+  rateIns.custom.addEventListener('focus', () => {
+    if(rateIns.custom.value === '7.00'){
+      rateIns.custom.value = '';
+      const w = rateIns.custom.closest('.fx-rate-in-wrap');
+      if(w) w.classList.remove('has-val');
+    }
+  });
+  // 汇率选项输入框：实时换算 + [×] 显隐 + ESC 清除（仅焦点在该框内才生效）
   Object.keys(rateIns).forEach(k => {
-    rateIns[k].addEventListener('input', () => { if(active === k) recalc(); });
+    const el = rateIns[k];
+    const wrap = el.closest('.fx-rate-in-wrap');
+    el.addEventListener('input', () => {
+      if(wrap) wrap.classList.toggle('has-val', el.value !== '');
+      if(active === k) recalc();
+    });
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Escape'){
+        e.stopPropagation();
+        el.value = '';
+        if(wrap) wrap.classList.remove('has-val');
+        if(active === k) recalc();
+      }
+    });
+  });
+  // [×] 清除汇率选项输入框
+  document.querySelectorAll('[data-fxclr]').forEach(b => {
+    const id = b.dataset.fxclr;
+    if(id === 'main') return;   // 主框已由 clearFxMain 处理
+    b.addEventListener('click', () => {
+      const el = $(id); if(!el) return;
+      el.value = '';
+      const wrap = el.closest('.fx-rate-in-wrap');
+      if(wrap) wrap.classList.remove('has-val');
+      if(active === id) recalc();
+    });
   });
   // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保每日自动更新锚点生效
   rateIns.today.value = RATE_CFG.today;
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   if(RATE_CFG.src) srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.src)+'</b>，每日自动更新。';
-  applyDir(); recalc();
+  applyDir(); syncMainX(); recalc();
   // 每日自动刷新：打开页面时若当天(UTC+8)尚未拉取，则请求实时汇率并缓存到 localStorage
   if(RATE_CFG.autoUpdate){
     (function autoRate(){
