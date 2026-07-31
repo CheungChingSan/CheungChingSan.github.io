@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>外贸价格速查 · 新华健康外贸客户管理系统</title>
+<title>产品价格速查 · 新华健康外贸客户管理系统</title>
 <style>
   :root{
     --bg:#0b1220; --bg2:#0f172a; --panel:rgba(255,255,255,.04); --panel2:rgba(255,255,255,.07);
@@ -30,17 +30,16 @@
       linear-gradient(135deg, rgba(13,148,136,.32) 0%, rgba(14,165,233,.28) 100%); }
   header.hero::after{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
     radial-gradient(78% 58% at 50% -8%, rgba(255,255,255,.14) 0%, transparent 60%); }
-  header.hero .brand-block{ position:absolute; top:16px; left:16px; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
-  header.hero .brand-logo{ max-height:46px; max-width:220px; width:auto; height:auto; }
-  header.hero .chinaclock{ font-size:26px; color:#fff; font-weight:700; margin-top:4px;
+  header.hero .brand-block{ position:absolute; top:16px; left:16px; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+  header.hero .brand-logo{ max-height:50px; max-width:240px; width:auto; height:auto; }
+  header.hero .chinaclock{ font-size:26px; color:#fff; font-weight:700; margin-top:2px;
     font-variant-numeric:tabular-nums; letter-spacing:1px; line-height:1.1;
-    display:flex; align-items:center; white-space:nowrap; }
+    width:100%; display:flex; align-items:center; white-space:nowrap; }
   header.hero .chinaclock .seg{ display:inline-block; }
   header.hero .chinaclock .colon{ font-weight:400; }
-  header.hero .chinaclock .tz{ margin-left:10px; font-size:13px; font-weight:600; opacity:.85; }
-  header.hero h1, header.hero p{ position:relative; z-index:1; }
+  header.hero .chinaclock .tz{ margin-left:auto; padding-left:10px; }
+  header.hero h1{ position:relative; z-index:1; }
   header.hero h1{ margin:0; font-size:26px; letter-spacing:2px; font-weight:700; }
-  header.hero p{ margin:8px 0 0; opacity:.9; font-size:13px; }
   .back{ position:absolute; top:16px; right:16px; z-index:3; display:inline-flex; align-items:center; gap:6px;
     font-size:13px; font-weight:600; color:#fff; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22);
     padding:8px 14px; border-radius:10px; transition:.18s; }
@@ -110,8 +109,7 @@
     <div class="chinaclock" id="chinaclock"></div>
   </div>
   <a class="back" href="index.html">← 返回综合索引</a>
-  <h1>外贸价格速查</h1>
-  <p>电外科外贸价格 · 按编码 / 名称 / 规格 / 型号精准定位产品全部信息</p>
+  <h1>产品价格速查</h1>
 </header>
 <div class="wrap">
   <div class="search-panel">
@@ -152,7 +150,7 @@
   <div id="results" class="grid"></div>
   <div id="empty" class="empty" style="display:none"><div class="big">🔍</div>未找到匹配的产品，试试更短的关键词。</div>
 </div>
-<footer>新华健康外贸客户管理系统 · 外贸价格速查（静态版，共 <span id="total2">0</span> 条）</footer>
+<footer>新华健康外贸客户管理系统 · 产品价格速查（静态版，共 <span id="total2">0</span> 条）</footer>
 <div class="tip-float">显示 <b>✅️</b> 即型号与规格相同</div>
 
 <script>
