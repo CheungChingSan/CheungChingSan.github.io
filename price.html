@@ -60,9 +60,9 @@
   .field label{ font-size:12px; color:#fff; font-weight:700; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.35); }
   .field .input-wrap{ position:relative; display:flex; align-items:center; }
   .field input{ width:100%; padding:11px 38px 11px 13px; border-radius:11px; font-size:15px; color:var(--text);
-    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.16); transition:.18s; }
+    background:rgba(255,255,255,.05); border:1px solid var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); transition:.18s; }
   .field input::placeholder{ color:#5b6b85; }
-  .field input:focus{ outline:none; border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); }
+  .field input:focus{ outline:none; border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.3); }
   /* 圆形清空按钮 [×] */
   .clear-x{ position:absolute; right:8px; top:50%; transform:translateY(-50%);
     width:22px; height:22px; border-radius:50%; padding:0; display:none; align-items:center; justify-content:center;
@@ -78,12 +78,11 @@
   .fx-row.reversed{ flex-direction:column-reverse; }
   .fx-field{ position:relative; display:flex; flex-direction:column; }
   .fx-inputwrap{ position:relative; display:flex; align-items:center; }
-  .fx-field input{ flex:1 1 auto; width:auto; min-width:0; border:1px solid var(--line); background:rgba(2,6,23,.5); color:var(--text); font-size:15px; padding:10px 62px 10px 12px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; transition:.18s; }
+  .fx-field input{ flex:1 1 auto; width:auto; min-width:0; border:1px solid var(--sky); background:rgba(2,6,23,.5); color:var(--text); font-size:15px; padding:10px 62px 10px 12px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; box-shadow:0 0 0 3px rgba(14,165,233,.18); transition:.18s; }
   .fx-field input::placeholder{ color:#5b6b85; }
-  .fx-field.src input{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); }
+  .fx-field.src input{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.3); }
   /* RMB/USD 标识重新纳入输入框内（位于 [×] 按钮左侧） */
-  .fx-field .fx-unit{ position:absolute; right:34px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.5px; pointer-events:none; }
-  .fx-field.src .fx-unit{ color:var(--sky); }
+  .fx-field .fx-unit{ position:absolute; right:34px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:700; color:var(--sky); letter-spacing:.5px; pointer-events:none; }
   /* 切换按钮：单纯曲形双箭头符号，不要圆圈背景 */
   .fx-swap{ align-self:center; flex:none; background:transparent; border:0; padding:3px; cursor:pointer; color:var(--accent);
     display:flex; align-items:center; justify-content:center; line-height:0; transition:transform .25s ease; }
@@ -95,8 +94,8 @@
   .fx-rate > span.lbl{ flex:1 1 auto; white-space:nowrap; }
   .fx-rate-in-wrap{ position:relative; display:inline-flex; align-items:center; }
   .fx-rate-in{ width:100px; padding:5px 26px 5px 7px; border-radius:8px; font-size:12px; text-align:right; color:var(--text);
-    background:rgba(2,6,23,.5); border:1px solid var(--line); outline:none; font-variant-numeric:tabular-nums; }
-  .fx-rate-in:focus{ border-color:var(--sky); }
+    background:rgba(2,6,23,.5); border:1px solid var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); outline:none; font-variant-numeric:tabular-nums; }
+  .fx-rate-in:focus{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.3); }
   .fx-rate-in-wrap .clear-x{ width:17px; height:17px; font-size:12px; right:5px; }
   .fx-inputwrap.has-val .clear-x, .fx-rate-in-wrap.has-val .clear-x{ display:flex; }
   .fx-note{ margin-top:10px; font-size:11.5px; color:var(--muted); }
@@ -109,7 +108,7 @@
     border-radius:13px; padding:13px 15px; display:flex; flex-direction:column; gap:8px;
     box-shadow:0 8px 24px rgba(2,6,23,.35); animation:rise .28s ease both; }
   @keyframes rise{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
-  .card .head{ display:flex; align-items:flex-start; gap:8px; }
+  .card .head{ display:flex; align-items:baseline; gap:8px; }
   .card .code{ font-family:var(--font); font-size:13px; font-weight:800; letter-spacing:.4px; flex:none; color:#fff; }
   .card .name{ font-size:15px; font-weight:700; line-height:1.32; color:#fff; }
   /* 字段：标签左 / 值右 横向一行，2 列紧凑，最大化纵向空间利用率 */
