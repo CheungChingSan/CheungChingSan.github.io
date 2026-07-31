@@ -77,13 +77,14 @@
   .fx-row{ display:flex; flex-direction:column; align-items:stretch; gap:6px; }
   .fx-row.reversed{ flex-direction:column-reverse; }
   .fx-field{ position:relative; display:flex; flex-direction:column; }
-  .fx-label{ font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.5px; margin-bottom:3px; }
   .fx-inputwrap{ position:relative; display:flex; align-items:center; }
-  .fx-field input{ width:100%; min-width:0; border:1px solid var(--line); background:rgba(2,6,23,.5); color:var(--text); font-size:15px; padding:10px 38px 10px 12px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; transition:.18s; }
+  .fx-field input{ flex:1 1 auto; width:auto; min-width:0; border:1px solid var(--line); background:rgba(2,6,23,.5); color:var(--text); font-size:15px; padding:10px 62px 10px 12px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; transition:.18s; }
   .fx-field input::placeholder{ color:#5b6b85; }
   .fx-field input[readonly]{ color:#9fb3cf; }
   .fx-field.src input{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); }
-  .fx-field.src .fx-label{ color:var(--sky); }
+  /* RMB/USD 标识重新纳入输入框内（位于 [×] 按钮左侧） */
+  .fx-field .fx-unit{ position:absolute; right:34px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.5px; pointer-events:none; }
+  .fx-field.src .fx-unit{ color:var(--sky); }
   /* 切换按钮：单纯曲形双箭头符号，不要圆圈背景 */
   .fx-swap{ align-self:center; flex:none; background:transparent; border:0; padding:3px; cursor:pointer; color:var(--accent);
     display:flex; align-items:center; justify-content:center; line-height:0; transition:transform .25s ease; }
@@ -192,9 +193,9 @@
           <div class="fx-title">汇率换算</div>
           <div class="fx-row">
             <div class="fx-field" id="fxFieldRmb">
-              <span class="fx-label">RMB</span>
               <div class="fx-inputwrap">
                 <input id="fxRmb" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+                <span class="fx-unit">RMB</span>
                 <button type="button" class="clear-x" data-fxclr="main" title="清空" aria-label="清空">×</button>
               </div>
             </div>
@@ -202,9 +203,9 @@
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg>
             </button>
             <div class="fx-field" id="fxFieldUsd">
-              <span class="fx-label">USD</span>
               <div class="fx-inputwrap">
                 <input id="fxUsd" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+                <span class="fx-unit">USD</span>
                 <button type="button" class="clear-x" data-fxclr="main" title="清空" aria-label="清空">×</button>
               </div>
             </div>
