@@ -6,6 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<link rel="preload" as="image" href="bg.jpg">
+<link rel="preload" as="image" href="shinva_logo.png">
 <title>产品价格查询 · 新华健康外贸客户管理系统</title>
 <style>
   :root{
@@ -17,7 +19,7 @@
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif;
   }
   *{ box-sizing:border-box; }
-  html{ scroll-behavior:smooth; }
+  html{ scroll-behavior:smooth; background:var(--bg); }
   body{ margin:0; min-height:100vh; color:var(--text);
     font-family:var(--font);
     line-height:1.6; background:
@@ -272,7 +274,7 @@
             <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
-          <div class="fx-src">汇率来源：今日=<b>open.er-api.com 每日参考汇率</b>；月初/月末=<b>fawazahmed0 历史汇率</b>（按业务规则取首/末工作日，均每次打开页面自动读取）。</div>
+          <div class="fx-src">汇率来源：今日=<b>人民币汇率中间价</b>；月初/月末=<b>fawazahmed0 历史汇率</b>（按业务规则取首/末工作日，均每次打开页面自动读取）。</div>
           <div class="fx-disc">预估月末汇率仅供内部经营测算参考，不作为账务处理依据。</div>
         </div>
       </div>
@@ -291,16 +293,14 @@ const DATA = [{"code": "HS00001", "name": "高频手术设备", "fields": {"规�
 const $ = (id) => document.getElementById(id);
 $('total2').textContent = DATA.length;
 
-// 汇率配置：今日汇率由「每次打开页面自动读取 fx_rate.json」覆盖（RATE_CFG.today / RATE_CFG.src 是刷新锚点）
-// 汇率铁律（2026-07-31 用户放宽）：数据源不强制央行中间价 JSON 接口，只要是稳定、每日更新的媒体/机构即可
-// 更新机制：不依赖任何自动化任务；用户每次打开/登录网页界面即自动 fetch 稳定外部汇率源（带 CORS，页面端直连），失败回退同源 fx_rate.json
+// 汇率配置：今日汇率=央行人民币汇率中间价，由「每次打开页面自动读取同源 fx_rate.json」覆盖（RATE_CFG.today / RATE_CFG.src 是刷新锚点）
+// 月初/月末：按业务规则（首/末工作日）取 fawazahmed0 历史汇率（稳定、每日更新、带 CORS），与今日独立取值
+// 更新机制：不依赖自动化任务；每次打开/登录网页即 fetch fx_rate.json（今日，权威中间价）+ fawazahmed0（月初/月末历史），失败回退内置兜底
 const RATE_CFG = {
-  today: 6.7894,                                  // 今日参考汇率离线兜底默认（最后已知）
+  today: 6.7894,                                  // 今日参考汇率离线兜底默认（央行中间价，最后已知）
   monthStart: 6.7941,                             // 月初汇率离线兜底（2026-07-01 首工作日参考值）
   monthEnd: 6.7923,                               // 月末汇率离线兜底（2026-06-30 上月末参考值）
-  src: "本地缓存汇率",                             // fx_rate.json 回退时的来源标注
-  liveUrl: "https://open.er-api.com/v6/latest/USD",                 // 今日：稳定、每日更新、带 CORS
-  liveSrc: "open.er-api.com 每日参考汇率",         // 数据源标注（非央行中间价，按用户放宽要求取稳定每日更新源）
+  src: "人民币汇率中间价",                          // fx_rate.json 权威来源标注（央行中间价）
   histUrl: "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{date}/v1/currencies/usd.json", // 历史汇率(按日期) 带 CORS
   histSrc: "fawazahmed0 历史汇率",                // 月初/月末历史汇率源标注
   autoUpdate: true
@@ -546,7 +546,7 @@ document.addEventListener('keydown', e => {
     if(!(val > 0)) return;
     RATE_CFG.today = val; rateVals.today = val;
     rateVal.textContent = val.toFixed(4);
-    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日参考汇率每次打开页面自动读取；月初/月末按业务规则独立取值（见标注）。';
+    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b>';
     if(active === 'today') recalc();
   }
   // 月初汇率：当月首个工作日参考汇率（网络取值成功时覆盖离线兜底）
@@ -655,7 +655,7 @@ document.addEventListener('keydown', e => {
   // 今日/月初/月末为系统统一取值，仅勾选无输入框；汇率值由 rateVals 提供（applyRate 每次打开页面刷新 today）
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   showFxVals();
-  srcEl.innerHTML = '汇率来源：今日=<b>'+esc(RATE_CFG.liveSrc)+'</b>；月初/月末=<b>'+esc(RATE_CFG.histSrc)+'</b>（每次打开页面自动读取）。';
+  srcEl.innerHTML = '汇率来源：今日=<b>'+esc(RATE_CFG.src)+'</b>；月初/月末=<b>'+esc(RATE_CFG.histSrc)+'</b>（每次打开页面自动读取）。';
   applySrc(); syncMainX(); recalc();
   // 每次打开/登录网页界面自动刷新（无自动化任务）：今日抓实时源；月初/月末按业务规则抓历史汇率源
   if(RATE_CFG.autoUpdate){
@@ -680,18 +680,11 @@ document.addEventListener('keydown', e => {
           });
         })(dateObj);
       }
-      // 今日：实时源（open.er-api / fawazahmed0 双形态），失败回退同源 fx_rate.json
-      function applyLiveToday(j){
-        let v=null;
-        if(j && j.rates && j.rates.CNY>0) v=j.rates.CNY;
-        else if(j && j.usd && j.usd.cny>0) v=j.usd.cny;
-        if(v>0) applyToday(v, RATE_CFG.liveSrc + (j.date||j.time_last_update_utc ? ' · '+(j.date||j.time_last_update_utc) : ''));
-      }
-      fetch(RATE_CFG.liveUrl, {cache:'no-store'}).then(function(r){ return r.json(); }).then(applyLiveToday).catch(function(){
-        fetch('fx_rate.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
-          if(j && j.usdCny>0) applyToday(j.usdCny, (j.src||'本地缓存汇率')+(j.date?' · '+j.date:''));
-        }).catch(function(){});
-      });
+      // 今日：以同源 fx_rate.json（央行人民币汇率中间价，权威）为基准，每次打开页面读取最新值
+      // 满足"自动刷新"且数值为官方中间价(~6.78)；外部市场源(open.er-api ~6.76)非官方中间价，不再覆盖今日
+      fetch('fx_rate.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
+        if(j && j.usdCny>0) applyToday(j.usdCny, (j.src||'人民币汇率中间价')+(j.date?' · '+j.date:''));
+      }).catch(function(){});
       // 月初：当月首个工作日汇率（网络取值成功时覆盖离线兜底）
       fetchHist(firstWorkday(curY,curM), function(v){ applyMonthStart(v); }, function(){});
       // 月末：当月已至末工作日→取实际末工作日汇率；否则（月度期间）暂用上月末汇率作为预估
