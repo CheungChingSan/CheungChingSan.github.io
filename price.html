@@ -259,7 +259,7 @@
               <span class="fx-rate-in-wrap"><input id="fxCustom" class="fx-rate-in" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></div>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
-          <div class="fx-src">汇率来源：<b>中国外汇交易中心</b> 2026-07-31 中间价（1 USD = 6.7894 CNY）。今日/月初/月末为系统定值，每日自动更新，不可手动修改。</div>
+          <div class="fx-src">汇率来源：<b>中国人民银行授权中国外汇交易中心公布</b> · 2026-07-31 人民币汇率中间价（1 USD = 6.7894 CNY）。今日/月初/月末为系统定值，按央行中间价每日自动更新，不可手动修改。</div>
         </div>
       </div>
     </aside>
@@ -277,10 +277,11 @@ const DATA = [{"code": "HS00001", "name": "高频手术设备", "fields": {"规�
 const $ = (id) => document.getElementById(id);
 $('total2').textContent = DATA.length;
 
-// 汇率配置：今日汇率由「每日自动更新」覆盖（RATE_CFG.today / RATE_CFG.src 是自动刷新锚点，便于 CI 稳定替换）
+// 汇率配置：今日汇率由「每日自动更新」覆盖（RATE_CFG.today / RATE_CFG.src 是自动刷新锚点，便于每日自动化稳定替换）
+// 铁律：主/测两账号汇率统一采用「中国人民银行授权中国外汇交易中心公布的人民币汇率中间价」，每日至少更新 1 次
 const RATE_CFG = {
   today: 6.7894,
-  src: "中国外汇交易中心 2026-07-31 中间价",
+  src: "中国人民银行授权中国外汇交易中心公布 · 2026-07-31 人民币汇率中间价",
   autoUpdate: true
 };
 
@@ -492,7 +493,7 @@ document.addEventListener('keydown', e => {
 (function(){
   const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), usdField = $('fxFieldUsd'), rmbField = $('fxFieldRmb');
   const swapBtn = $('fxSwap'), rateVal = $('fxRateVal'), row = document.querySelector('.fx-row');
-  const customIn = $('fxCustom'); const rateVals = { today: RATE_CFG.today, monthStart: 7.18, monthEnd: 7.22 };
+  const customIn = $('fxCustom'); const rateVals = { today: RATE_CFG.today, monthStart: RATE_CFG.today, monthEnd: RATE_CFG.today };
   const srcEl = document.querySelector('.fx-src');
   const checks = {};
   document.querySelectorAll('.fx-check').forEach(c => checks[c.dataset.rate] = c);
@@ -517,7 +518,7 @@ document.addEventListener('keydown', e => {
     RATE_CFG.today = val;
     rateVals.today = val; rateVals.monthStart = val; rateVals.monthEnd = val;
     rateVal.textContent = val.toFixed(4);
-    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统定值，每日自动更新，不可手动修改。';
+    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统定值，按央行中间价每日自动更新，不可手动修改。';
     if(active === 'today' || active === 'monthStart' || active === 'monthEnd') recalc();
   }
   // 双向换算：以最后输入的框为源，反推另一框
@@ -625,13 +626,13 @@ document.addEventListener('keydown', e => {
         const c = JSON.parse(localStorage.getItem(key) || 'null');
         if(c && c.date === d && c.val > 0){ applyRate(c.val, c.src); return; }
       }catch(e){}
+      // 央行人民币汇率中间价：同源 fx_rate.json（每日自动化从官方渠道抓取并部署，权威且可跨域）
       try{
-        fetch('https://open.er-api.com/v6/latest/USD').then(function(r){ return r.json(); }).then(function(j){
-          if(j && j.result === 'success' && j.rates && j.rates.CNY > 0){
-            const v = j.rates.CNY;
-            const src = 'ExchangeRate-API（open.er-api.com）· ' + d;
-            applyRate(v, src);
-            try{ localStorage.setItem(key, JSON.stringify({date:d, val:v, src:src})); }catch(e){}
+        fetch('fx_rate.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
+          if(j && j.usdCny > 0){
+            const src = (j.src || '中国人民银行授权中国外汇交易中心公布 · 人民币汇率中间价') + (j.date ? ' · ' + j.date : '');
+            applyRate(j.usdCny, src);
+            try{ localStorage.setItem(key, JSON.stringify({date:d, val:j.usdCny, src:src})); }catch(e){}
           }
         }).catch(function(){});
       }catch(e){}
