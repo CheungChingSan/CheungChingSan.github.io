@@ -98,8 +98,8 @@
     display:flex; align-items:center; justify-content:center; line-height:0; transition:transform .25s ease; }
   .fx-swap:hover{ transform:rotate(180deg); }
   .fx-swap:active{ transform:rotate(180deg) scale(.9); }
-  .fx-rates{ display:grid; grid-template-columns:1fr 1fr; gap:9px 10px; margin-top:10px; align-items:start; }
-  .fx-rate{ display:flex; align-items:center; gap:7px; font-size:12px; color:#fff; }
+  .fx-rates{ display:grid; grid-template-columns:1fr 1fr; gap:9px 10px; margin-top:10px; align-items:center; }
+  .fx-rate{ display:flex; align-items:center; gap:7px; font-size:12px; color:#fff; min-height:28px; }
   .fx-rate input[type=checkbox]{ width:15px; height:15px; accent-color:#22d3ee; cursor:pointer; flex:none; }
   .fx-rate > span.lbl{ flex:none; white-space:nowrap; }
   .fx-rate.custom{ flex-direction:row; align-items:center; gap:7px; }
@@ -266,7 +266,7 @@
             <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
-          <div class="fx-src">汇率来源：<b>open.er-api.com 每日参考汇率</b> · 今日/月初/月末为系统统一取值，页面每次打开自动读取最新参考汇率（联网失败回退本地缓存），不可手动修改。</div>
+          <div class="fx-src">汇率来源：<b>open.er-api.com 每日参考汇率</b> · 今日/月初/月末为系统统一取值，页面每次打开自动读取最新参考汇率（联网失败回退本地缓存）。</div>
         </div>
       </div>
     </aside>
@@ -537,7 +537,7 @@ document.addEventListener('keydown', e => {
     rateVals.today = val; rateVals.monthStart = val; rateVals.monthEnd = val;
     rateVal.textContent = val.toFixed(4);
     showFxVals();
-    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统统一取值（页面每次加载自动读取最新参考汇率），固定汇率可手动覆盖，不可手动修改系统值。';
+    if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b> · 今日/月初/月末为系统统一取值（页面每次加载自动读取最新参考汇率），固定汇率可手动覆盖。';
     if(active === 'today' || active === 'monthStart' || active === 'monthEnd') recalc();
   }
   // 双向换算：以最后输入的框为源，反推另一框
@@ -631,7 +631,7 @@ document.addEventListener('keydown', e => {
   // 今日/月初/月末为系统统一取值，仅勾选无输入框；汇率值由 rateVals 提供（applyRate 每次打开页面刷新 today）
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   showFxVals();
-  srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.liveSrc)+'</b> · 页面每次打开自动读取最新参考汇率（联网失败回退本地缓存），不可手动修改系统值。';
+  srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.liveSrc)+'</b> · 页面每次打开自动读取最新参考汇率（联网失败回退本地缓存）。';
   applySrc(); syncMainX(); recalc();
   // 每次打开/登录网页界面自动刷新：优先抓取稳定、每日更新的外部汇率源（带 CORS，页面端直接 fetch，无需自动化任务）；
   // 抓取失败则回退同源 fx_rate.json（始终可用、国内可访问），再失败回退内置兜底值。
