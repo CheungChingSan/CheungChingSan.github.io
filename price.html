@@ -80,7 +80,6 @@
   .fx-inputwrap{ position:relative; display:flex; align-items:center; }
   .fx-field input{ flex:1 1 auto; width:auto; min-width:0; border:1px solid var(--line); background:rgba(2,6,23,.5); color:var(--text); font-size:15px; padding:10px 62px 10px 12px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; transition:.18s; }
   .fx-field input::placeholder{ color:#5b6b85; }
-  .fx-field input[readonly]{ color:#9fb3cf; }
   .fx-field.src input{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); }
   /* RMB/USD 标识重新纳入输入框内（位于 [×] 按钮左侧） */
   .fx-field .fx-unit{ position:absolute; right:34px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.5px; pointer-events:none; }
@@ -382,7 +381,7 @@ document.addEventListener('keydown', e => {
   if(lg){ if(lg.complete) sizeToLogo(); else lg.addEventListener('load', sizeToLogo); }
   window.addEventListener('resize', sizeToLogo);
 })();
-// ===== 汇率换算（含每日自动刷新）=====
+// ===== 汇率换算（双向输入 · 每日自动刷新）=====
 (function(){
   const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), usdField = $('fxFieldUsd'), rmbField = $('fxFieldRmb');
   const swapBtn = $('fxSwap'), rateVal = $('fxRateVal'), row = document.querySelector('.fx-row');
@@ -390,35 +389,40 @@ document.addEventListener('keydown', e => {
   const srcEl = document.querySelector('.fx-src');
   const checks = {};
   document.querySelectorAll('.fx-check').forEach(c => checks[c.dataset.rate] = c);
-  let reversed = false;   // false：RMB 在上(源)；true：USD 在上(源)
+  let reversed = false;   // 视觉顺序：false=RMB 在上；true=USD 在上
+  let lastEdited = 'rmb'; // 当前换算源（最后输入的框）
   let active = 'today';    // 当前生效的汇率键
   function rate(){
     const v = parseFloat(rateIns[active].value);
     return (isFinite(v) && v > 0) ? v : (RATE_CFG.today || 6.7894);
   }
-  function leftIn(){ return reversed ? usdIn : rmbIn; }
-  function rightIn(){ return reversed ? rmbIn : usdIn; }
-  function leftField(){ return reversed ? usdField : rmbField; }
-  function rightField(){ return reversed ? rmbField : usdField; }
-  function applyDir(){
-    leftIn().readOnly = false; rightIn().readOnly = true;
-    leftField().classList.add('src'); rightField().classList.remove('src');
+  // 高亮当前作为换算源的输入框（双向模式下无只读，仅作视觉反馈）
+  function applySrc(){
+    rmbField.classList.toggle('src', lastEdited === 'rmb');
+    usdField.classList.toggle('src', lastEdited === 'usd');
   }
+  // 实时汇率刷新：今日 / 月初 / 月末 同步为当日实时值（固定汇率保持手动值）
   function applyRate(val, srcText){
     if(!(val > 0)) return;
     RATE_CFG.today = val;
     rateIns.today.value = val.toFixed(4);
+    rateIns.monthStart.value = val.toFixed(4);
+    rateIns.monthEnd.value = val.toFixed(4);
     rateVal.textContent = val.toFixed(4);
     if(srcText) srcEl.innerHTML = '汇率来源：<b>'+esc(srcText)+'</b>，每日自动更新。';
-    if(active === 'today') recalc();
+    if(active === 'today' || active === 'monthStart' || active === 'monthEnd') recalc();
   }
+  // 双向换算：以最后输入的框为源，反推另一框
   function recalc(){
     rateVal.textContent = rate().toFixed(4);
-    const lv = parseFloat(leftIn().value);
-    let rv;
-    if(leftIn() === rmbIn) rv = isFinite(lv) ? lv / rate() : NaN;   // RMB -> USD
-    else rv = isFinite(lv) ? lv * rate() : NaN;                     // USD -> RMB
-    rightIn().value = isFinite(rv) ? rv.toFixed(2) : '';
+    const r = rate();
+    if(lastEdited === 'rmb'){
+      const v = parseFloat(rmbIn.value);
+      usdIn.value = isFinite(v) ? (v / r).toFixed(2) : '';
+    } else {
+      const v = parseFloat(usdIn.value);
+      rmbIn.value = isFinite(v) ? (v * r).toFixed(2) : '';
+    }
   }
   // 主输入框（RMB/USD）[×] 显隐：任一有值即两个框都显示
   function syncMainX(){
@@ -433,20 +437,21 @@ document.addEventListener('keydown', e => {
     rmbIn.value = ''; usdIn.value = '';
     syncMainX(); recalc();
   }
-  [usdIn, rmbIn].forEach(inp => inp.addEventListener('input', () => { syncMainX(); recalc(); }));
+  // 双向输入：任一框输入即作为源反推另一框
+  rmbIn.addEventListener('input', () => { lastEdited = 'rmb'; applySrc(); syncMainX(); recalc(); });
+  usdIn.addEventListener('input', () => { lastEdited = 'usd'; applySrc(); syncMainX(); recalc(); });
   // 主输入框 ESC：仅清空换算区，stopPropagation 避免与全局重置冲突
   [usdIn, rmbIn].forEach(inp => inp.addEventListener('keydown', e => {
     if(e.key === 'Escape'){ e.stopPropagation(); clearFxMain(); }
   }));
   document.querySelectorAll('[data-fxclr="main"]').forEach(b => b.addEventListener('click', clearFxMain));
+  // 切换上下视觉顺序：交换两框值使数值随位置移动，新上方框作为源
   swapBtn.addEventListener('click', () => {
-    const prevOut = rightIn().value;          // 切换前下方(结果)值
+    const t = rmbIn.value; rmbIn.value = usdIn.value; usdIn.value = t;
     reversed = !reversed;
     row.classList.toggle('reversed', reversed);
-    leftIn().value = prevOut;                 // 原结果转为新源，保持数值连续
-    rightIn().value = '';
-    syncMainX();
-    applyDir(); recalc();
+    lastEdited = reversed ? 'usd' : 'rmb';
+    applySrc(); syncMainX(); recalc();
   });
   Object.keys(checks).forEach(k => {
     checks[k].addEventListener('change', () => {
@@ -501,7 +506,7 @@ document.addEventListener('keydown', e => {
   rateIns.today.value = RATE_CFG.today;
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   if(RATE_CFG.src) srcEl.innerHTML = '汇率来源：<b>'+esc(RATE_CFG.src)+'</b>，每日自动更新。';
-  applyDir(); syncMainX(); recalc();
+  applySrc(); syncMainX(); recalc();
   // 每日自动刷新：打开页面时若当天(UTC+8)尚未拉取，则请求实时汇率并缓存到 localStorage
   if(RATE_CFG.autoUpdate){
     (function autoRate(){
