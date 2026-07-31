@@ -78,7 +78,7 @@
   .fx-row.reversed{ flex-direction:column-reverse; }
   .fx-field{ position:relative; display:flex; flex-direction:column; }
   .fx-inputwrap{ position:relative; display:flex; align-items:center; }
-  .fx-field input{ flex:1 1 auto; width:auto; min-width:0; border:1px solid var(--sky); background:rgba(2,6,23,.5); color:var(--text); font-size:15px; padding:10px 62px 10px 12px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; box-shadow:0 0 0 3px rgba(14,165,233,.18); transition:.18s; }
+  .fx-field input{ flex:1 1 auto; width:auto; min-width:0; border:1px solid var(--sky); background:rgba(255,255,255,.05); color:var(--text); font-size:15px; padding:11px 62px 11px 13px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; box-shadow:0 0 0 3px rgba(14,165,233,.18); transition:.18s; }
   .fx-field input::placeholder{ color:#5b6b85; }
   .fx-field.src input{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.3); }
   /* RMB/USD 标识重新纳入输入框内（位于 [×] 按钮左侧） */
@@ -91,10 +91,10 @@
   .fx-rates{ display:flex; flex-direction:column; gap:7px; margin-top:12px; }
   .fx-rate{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:#fff; }
   .fx-rate input[type=checkbox]{ width:15px; height:15px; accent-color:#22d3ee; cursor:pointer; flex:none; }
-  .fx-rate > span.lbl{ flex:1 1 auto; white-space:nowrap; }
-  .fx-rate-in-wrap{ position:relative; display:inline-flex; align-items:center; }
-  .fx-rate-in{ width:100px; padding:5px 26px 5px 7px; border-radius:8px; font-size:12px; text-align:right; color:var(--text);
-    background:rgba(2,6,23,.5); border:1px solid var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); outline:none; font-variant-numeric:tabular-nums; }
+  .fx-rate > span.lbl{ flex:none; white-space:nowrap; }
+  .fx-rate-in-wrap{ position:relative; display:inline-flex; align-items:center; flex:1 1 auto; }
+  .fx-rate-in{ width:100%; padding:11px 26px 11px 13px; border-radius:11px; font-size:15px; text-align:left; color:var(--text);
+    background:rgba(255,255,255,.05); border:1px solid var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); outline:none; font-variant-numeric:tabular-nums; }
   .fx-rate-in:focus{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.3); }
   /* 系统定值（今日/月初/月末汇率）：只读、不可键入，光标提示禁止 */
   .fx-rate-in[readonly]{ cursor:not-allowed; opacity:.9; }
@@ -105,6 +105,8 @@
   .fx-note b{ color:var(--accent); font-weight:700; }
   .fx-src{ font-size:11px; color:#6b7c96; margin-top:6px; line-height:1.4; }
   .fx-src b{ color:#9fb0c8; font-weight:600; }
+  /* 汇率换算说明文字（输入栏底部） */
+  .fx-caption{ font-size:11px; color:var(--muted); margin-top:9px; letter-spacing:.3px; }
   /* 结果 */
   .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(312px,1fr)); gap:12px; }
   .card{ position:relative; background:var(--panel2); border:1px solid var(--line); border-left:4px solid var(--brand);
@@ -219,6 +221,7 @@
             <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span>
               <span class="fx-rate-in-wrap"><input id="fxCustom" class="fx-rate-in" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></div>
           </div>
+          <div class="fx-caption">USD兑换RMB汇率</div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
           <div class="fx-src">汇率来源：<b>中国外汇交易中心</b> 2026-07-31 中间价（1 USD = 6.7894 CNY）。今日/月初/月末为系统定值，每日自动更新，不可手动修改。</div>
         </div>
