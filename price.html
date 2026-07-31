@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>外贸价格速查 · 新华健康外贸客户管理系统</title>
+<title>产品价格查询 · 新华健康外贸客户管理系统</title>
 <style>
   :root{
     --bg:#0b1220; --bg2:#0f172a; --panel:rgba(255,255,255,.04); --panel2:rgba(255,255,255,.07);
@@ -27,7 +27,7 @@
   a{ color:var(--accent); text-decoration:none; }
   /* 品牌化顶部 */
   header.hero{ position:relative; background:var(--bg2) url('bg.jpg') center top / cover no-repeat;
-    color:#fff; padding:34px 24px 40px; text-align:center; overflow:hidden; }
+    color:#fff; padding:34px 24px 40px; text-align:center; overflow:hidden; min-height:108px; }
   header.hero::before{ content:''; position:absolute; inset:0; z-index:0;
     background:linear-gradient(180deg, rgba(15,23,42,.62) 0%, rgba(15,23,42,.30) 45%, rgba(15,23,42,.66) 100%),
       linear-gradient(135deg, rgba(13,148,136,.32) 0%, rgba(14,165,233,.28) 100%); }
@@ -42,7 +42,8 @@
   header.hero .chinaclock .colon{ font-weight:400; }
   header.hero .chinaclock .tz{ margin-left:auto; padding-left:10px; }
   header.hero h1, header.hero p{ position:relative; z-index:1; }
-  header.hero h1{ margin:0; font-size:26px; letter-spacing:2px; font-weight:700; }
+  header.hero .brand-row{ display:flex; align-items:center; gap:10px; }
+  header.hero .brand-title{ font-size:28px; margin:0; letter-spacing:1px; font-weight:700; color:#fff; white-space:nowrap; }
   header.hero p{ margin:8px 0 0; opacity:.9; font-size:13px; }
   .back{ position:absolute; top:16px; right:16px; z-index:3; display:inline-flex; align-items:center; gap:6px;
     font-size:13px; font-weight:600; color:#fff; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22);
@@ -101,8 +102,8 @@
   .fx-rate{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:#fff; }
   .fx-rate input[type=checkbox]{ width:15px; height:15px; accent-color:#22d3ee; cursor:pointer; flex:none; }
   .fx-rate > span.lbl{ flex:none; white-space:nowrap; }
-  .fx-rate-in-wrap{ position:relative; display:inline-flex; align-items:center; flex:1 1 auto; }
-  .fx-rate-in{ width:100%; padding:11px 26px 11px 13px; border-radius:11px; font-size:15px; text-align:left; color:var(--text);
+  .fx-rate-in-wrap{ position:relative; display:inline-flex; align-items:center; flex:none; }
+  .fx-rate-in{ width:130px; padding:11px 26px 11px 13px; border-radius:11px; font-size:15px; text-align:center; color:var(--text);
     background:rgba(255,255,255,.05); border:1px solid var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.18); outline:none; font-variant-numeric:tabular-nums; }
   .fx-rate-in:focus{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(14,165,233,.3); }
   /* 系统定值（今日/月初/月末汇率）：只读、不可键入，光标提示禁止 */
@@ -114,8 +115,6 @@
   .fx-note b{ color:var(--accent); font-weight:700; }
   .fx-src{ font-size:11px; color:#6b7c96; margin-top:6px; line-height:1.4; }
   .fx-src b{ color:#9fb0c8; font-weight:600; }
-  /* 汇率换算说明文字（输入栏底部） */
-  .fx-caption{ font-size:11px; color:var(--muted); margin-top:9px; letter-spacing:.3px; }
   /* 结果 */
   .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(312px,1fr)); gap:12px; }
   .card{ position:relative; background:var(--panel2); border:1px solid var(--line); border-left:4px solid var(--brand);
@@ -154,6 +153,7 @@
     .search-col{ grid-template-columns:1fr; }
     .calc-grid{ grid-template-columns:1fr; }
     header.hero h1{ font-size:20px; }
+    header.hero .brand-title{ font-size:20px; }
     .grid{ grid-template-columns:1fr; }
     .back{ top:12px; right:12px; padding:7px 11px; font-size:12px; }
   }
@@ -161,11 +161,14 @@
 </head>
 <body>
 <header class="hero">
-  <div class="brand-block"><img src="shinva_logo.png" alt="SHINVA Health" class="brand-logo">
+  <div class="brand-block">
+    <div class="brand-row">
+      <img src="shinva_logo.png" alt="SHINVA Health" class="brand-logo">
+      <span class="brand-title">产品价格查询</span>
+    </div>
     <div class="chinaclock" id="chinaclock"></div>
   </div>
   <a class="back" href="index.html">← 返回综合索引</a>
-  <h1>外贸价格速查</h1>
 </header>
 <div class="wrap">
   <div class="layout">
@@ -256,7 +259,6 @@
             <div class="fx-rate"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span>
               <span class="fx-rate-in-wrap"><input id="fxCustom" class="fx-rate-in" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></div>
           </div>
-          <div class="fx-caption">USD兑换RMB汇率</div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
           <div class="fx-src">汇率来源：<b>中国外汇交易中心</b> 2026-07-31 中间价（1 USD = 6.7894 CNY）。今日/月初/月末为系统定值，每日自动更新，不可手动修改。</div>
         </div>
@@ -268,7 +270,7 @@
     </main>
   </div>
 </div>
-<footer>新华健康外贸客户管理系统 · 外贸价格速查（静态版，共 <span id="total2">0</span> 条）</footer>
+<footer>新华健康外贸客户管理系统 · 产品价格查询（静态版，共 <span id="total2">0</span> 条）</footer>
 <div class="tip-float">规格显示 <b>√</b> 即与型号相同</div>
 
 <script>
