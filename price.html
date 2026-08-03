@@ -184,7 +184,7 @@
       <span class="brand-title">产品价格查询</span>
     </div>
     <div class="chinaclock" id="chinaclock"></div>
-    <script>/* 同步首绘时钟，消除刷新时实时时间的位置/内容闪现 */(function(){try{var d=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());var p=String(d).split(':');var h='<span class="seg">'+p[0]+'</span><span class="colon">:</span><span class="seg">'+p[1]+'</span><span class="colon">:</span><span class="seg">'+p[2]+'</span><span class="tz">(UTC+8)</span>';var el=document.getElementById('chinaclock');if(el)el.innerHTML=h;}catch(e){}})();</script>
+    <script>/* 首绘时钟避免刷新闪现；并锁定时钟宽度=logo 宽，使 (UTC+8) 对齐 logo 右侧（与主账号索引页一致）；仅 logo 加载完成后锁定，避免加载期宽度抖动 */(function(){function paint(){try{var d=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());var p=String(d).split(':');var h='<span class="seg">'+p[0]+'</span><span class="colon">:</span><span class="seg">'+p[1]+'</span><span class="colon">:</span><span class="seg">'+p[2]+'</span><span class="tz">(UTC+8)</span>';var el=document.getElementById('chinaclock');if(el)el.innerHTML=h;}catch(e){}}function lock(){var lg=document.querySelector('header.hero .brand-logo');var clk=document.getElementById('chinaclock');if(!lg||!clk)return;if(!lg.complete||!lg.naturalWidth)return;var w=lg.offsetWidth;if(w)clk.style.width=w+'px';}paint();lock();var lg=document.querySelector('header.hero .brand-logo');if(lg)lg.addEventListener('load',lock);window.addEventListener('load',lock);window.addEventListener('resize',lock);})();</script>
   </div>
   <a class="back" href="index.html">← 返回综合索引</a>
 </header>
@@ -452,7 +452,7 @@ document.querySelectorAll('.clear-x[data-clear]').forEach(btn => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { e.preventDefault(); resetAll(); }
 });
-// 左上角实时中国时间（UTC+8）：26px 纯白、HH:MM:SS + (UTC+8)。首绘由内联脚本同步完成，此处仅维持每秒刷新（不再强制锁定 logo 宽，避免 logo 加载导致时钟宽度抖动闪现）
+// 左上角实时中国时间（UTC+8）：26px 纯白、HH:MM:SS + (UTC+8)。首绘与「时钟宽度锁定 logo 宽」由 hero 内联脚本完成（仅在 logo 加载后锁定，避免宽度抖动）；此处仅维持每秒刷新内联内容，不改动宽度。
 (function(){
   const el = $('chinaclock');
   if(!el) return;
