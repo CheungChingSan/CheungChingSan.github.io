@@ -494,8 +494,11 @@ function clearField(id){
   if (f) f.classList.remove('has-val');
   filter();
 }
+const _resetHooks = [];
+function _onReset(fn){ if (typeof fn === 'function') _resetHooks.push(fn); }
 function resetAll(){
   FIELDS.forEach(el => { el.value = ''; const f = el.closest('.field'); if (f) f.classList.remove('has-val'); });
+  _resetHooks.forEach(fn => { try { fn(); } catch(e){} });
   filter();
   qCode.focus();
 }
@@ -508,11 +511,6 @@ FIELDS.forEach(el => {
   });
   el.addEventListener('keydown', e => {
     if (e.key === 'Enter') filter();
-    else if (e.key === 'Escape') {
-      // 当前栏有内容：清空本栏（拦截冒泡，避免触发全局重置）
-      if (el.value !== '') { e.stopPropagation(); clearField(el.id); }
-      // 当前栏为空：不拦截 → 交给 document 全局重置全部
-    }
   });
 });
 // [×] 按钮点击清空对应栏（仅搜索栏：带 data-clear；计算/汇率区各自绑定）
@@ -541,6 +539,13 @@ results.addEventListener('click', function(e){
   document.querySelectorAll('.kv .k.price-key.sel').forEach(x=>x.classList.remove('sel'));
   kEl.classList.add('sel');
   if(up){ up.value = val; up.dispatchEvent(new Event('input',{bubbles:true})); }
+});
+// ESC 全局重置：清除选中价格按钮（黄色高亮）+ 清空产品单价
+_onReset(() => {
+  document.querySelectorAll('.kv .k.price-key.sel').forEach(x => x.classList.remove('sel'));
+  selSig = null;
+  const up = $('qUnitPrice');
+  if (up) { up.value = ''; const f = up.closest('.field'); if (f) f.classList.remove('has-val'); }
 });
 // 价格标题键盘可达：Enter / 空格 触发点击
 results.addEventListener('keydown', function(e){
@@ -601,9 +606,6 @@ results.addEventListener('keydown', function(e){
       }
       syncX(el); calc();
     });
-    el.addEventListener('keydown', e => {
-      if(e.key === 'Escape'){ e.stopPropagation(); clearCalc(el.id); }   // 仅清本栏，不触发全局重置
-    });
   });
   // 数量步进三角（实心白三角）：上 +1 / 下 -1，默认 1，最低 0
   const stepUp = document.querySelector('[data-step="up"]');
@@ -613,6 +615,12 @@ results.addEventListener('keydown', function(e){
   document.querySelectorAll('[data-calcclr]').forEach(b =>
     b.addEventListener('click', () => clearCalc(b.dataset.calcclr)));
   calc();
+  // ESC 全局重置：清空产品单价 / 数量归 1 / 总价归零
+  _onReset(() => {
+    up.value = ''; qty.value = '1';
+    syncX(up); syncX(qty);
+    calc();
+  });
 })();
 // ===== 汇率换算（双向输入 · 两行一列 · 每次打开页面自动刷新）=====
 (function(){
@@ -692,9 +700,6 @@ results.addEventListener('keydown', function(e){
   // 双向输入：任一框输入即作为源反推另一框
   rmbIn.addEventListener('input', () => { lastEdited = 'rmb'; applySrc(); syncMainX(); recalc(); });
   usdIn.addEventListener('input', () => { lastEdited = 'usd'; applySrc(); syncMainX(); recalc(); });
-  [usdIn, rmbIn].forEach(inp => inp.addEventListener('keydown', e => {
-    if(e.key === 'Escape'){ e.stopPropagation(); clearFxMain(); }
-  }));
   document.querySelectorAll('[data-fxclr="main"]').forEach(b => b.addEventListener('click', clearFxMain));
   // 切换上下视觉顺序：交换两框值使数值随位置移动，新上方框作为源
   swapBtn.addEventListener('click', () => {
@@ -738,14 +743,6 @@ results.addEventListener('keydown', function(e){
     if(customWrap) customWrap.classList.toggle('has-val', customIn.value !== '');
     if(active === 'custom') recalc();
   });
-  customIn.addEventListener('keydown', e => {
-    if(e.key === 'Escape'){
-      e.stopPropagation();
-      customIn.value = '';
-      if(customWrap) customWrap.classList.remove('has-val');
-      if(active === 'custom') recalc();
-    }
-  });
   // [×] 清除汇率选项输入框（固定汇率）
   document.querySelectorAll('[data-fxclr]').forEach(b => {
     const id = b.dataset.fxclr;
@@ -763,6 +760,14 @@ results.addEventListener('keydown', function(e){
   rateCells.forEach(c => c.classList.toggle('sel', c.dataset.rate === active));  // 默认今日汇率高亮边框
   srcEl.innerHTML = '汇率来源：今日 / 月初 / 月末 均取自「<b>'+esc(RATE_CFG.src)+'</b>」。';
   applySrc(); syncMainX(); recalc();
+  // ESC 全局重置：清空换算框 + 复原视觉顺序 + 汇率选项回到默认「今日」+ 清空固定汇率输入
+  _onReset(() => {
+    rmbIn.value = ''; usdIn.value = '';
+    reversed = false; row.classList.remove('reversed');
+    lastEdited = 'rmb'; applySrc(); syncMainX();
+    customIn.value = ''; if(customWrap) customWrap.classList.remove('has-val');
+    selectRate('today');
+  });
   // 每次打开/登录网页界面自动刷新（无自动化任务）：今日抓实时源；月初/月末按业务规则抓历史汇率源
   if(RATE_CFG.autoUpdate){
     (function autoRate(){
