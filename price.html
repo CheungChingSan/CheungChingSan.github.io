@@ -269,7 +269,7 @@
           </div>
           <div class="fx-rates">
             <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span><span class="fx-val" data-fxval="today">6.7910</span></label>
-            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl-block"><span class="lbl">月初汇率</span><i class="fx-note">首工作日</i></span><span class="fx-val" data-fxval="monthStart">6.7830</span></label>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl-block"><span class="lbl">月初汇率</span><i class="fx-note">首工作日</i></span><span class="fx-val" data-fxval="monthStart">6.7910</span></label>
             <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl-block"><span class="lbl">月末汇率</span><i class="fx-note" id="fxMonthEndNote">预估·上月末</i></span><span class="fx-val" data-fxval="monthEnd">6.7894</span></label>
             <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
@@ -299,7 +299,7 @@ $('total2').textContent = DATA.length;
 // 第三方 fawazahmed0 返回的是市场汇率(≈6.75)，并非央行中间价(≈6.78~6.79)，与「最终来源须为央行汇率」不符，已弃用。
 const RATE_CFG = {
   today: 6.7910,          // 今日央行中间价离线兜底（2026-08-03）
-  monthStart: 6.7830,     // 月初央行中间价（2026-08-01，8月首工作日）
+  monthStart: 6.7910,     // 月初央行中间价（2026-08-03，8月首交易日/首工作日）
   monthEnd: 6.7894,       // 月末央行中间价（2026-07-31，7月收官日/末工作日；月度期间作预估）
   src: "中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价",
   histSrc: "中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价",
@@ -308,11 +308,10 @@ const RATE_CFG = {
   // 央行中间价锚点表（随官方公布维护；key=YYYY-MM-DD，value=当日 USD/CNY 中间价）。无免费「央行中间价」历史 API，故以官方公布的锚点值为准。
   centralBank: {
     "2026-07-31": 6.7894, // 7月收官日（末工作日）
-    "2026-08-01": 6.7830, // 8月首工作日
-    "2026-08-03": 6.7910  // 今日
+    "2026-08-03": 6.7910  // 今日 / 8月首交易日（首工作日；央行中间价仅交易日发布）
   },
   todayDate: "2026-08-03",
-  monthStartDate: "2026-08-01",
+  monthStartDate: "2026-08-03",
   monthEndDate: "2026-07-31"
 };
 
@@ -688,8 +687,8 @@ document.addEventListener('keydown', e => {
         }
         return undefined;
       }
-      // 月初锚点取当月 1 日（用户提供的月初参考日；若 1 日为周末则 lookupCB 向前回退取最近已发布工作日）
-      const ms = lookupCB(new Date(curY, curM, 1), 7);
+      // 月初 = 央行标准：当月「首个交易日」中间价（firstWorkday，跳过周末/节假日；央行中间价仅交易日发布）
+      const ms = lookupCB(firstWorkday(curY, curM), 7);
       if(ms>0) applyMonthStart(ms);
       // 月末：当月已至末工作日→取实际末工作日汇率；否则（月度期间）暂用上月末汇率作为预估
       const lw = lastWorkday(curY,curM);
