@@ -52,7 +52,13 @@
   .wrap{ max-width:1440px; margin:14px 18px 56px; padding:0; position:relative; z-index:2; }
   /* 主体布局：左侧搜索栏竖排 + 右侧结果网格 */
   .layout{ display:grid; grid-template-columns:340px 1fr; gap:14px; align-items:start; }
-  .sidebar{ position:sticky; top:118px; }
+  /* 左侧栏整体固定：页面滚动时位置不偏移；内容超过视口高度时，仅栏内自行滚动 */
+  .sidebar{ position:sticky; top:118px; align-self:start;
+    max-height:calc(100vh - 134px); overflow-y:auto; overflow-x:hidden;
+    padding-right:6px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.18) transparent; }
+  .sidebar::-webkit-scrollbar{ width:8px; }
+  .sidebar::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.18); border-radius:8px; }
+  .sidebar::-webkit-scrollbar-track{ background:transparent; }
   /* 搜索面板（左侧竖排） */
   .search-panel{ background:rgba(15,23,42,.66); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:14px;
     backdrop-filter:blur(12px); box-shadow:0 12px 34px rgba(0,0,0,.38); }
@@ -73,6 +79,17 @@
   .field.has-val .clear-x{ display:flex; }
   .clear-x:hover{ background:rgba(248,113,113,.22); color:#fca5a5; border-color:rgba(248,113,113,.45); }
   .clear-x:active{ transform:translateY(-50%) scale(.9); }
+  /* 数量步进：实心白三角（位于右侧，避开 [×] 清空按钮） */
+  #qQty{ padding-right:62px; }
+  .qty-step{ position:absolute; right:36px; top:50%; transform:translateY(-50%);
+    display:flex; flex-direction:column; gap:3px; }
+  .qty-step button{ width:16px; height:10px; padding:0; margin:0; border:none; background:none;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; line-height:0; transition:.15s; }
+  .qty-step button:hover .tri-up{ border-bottom-color:var(--accent); }
+  .qty-step button:hover .tri-down{ border-top-color:var(--accent); }
+  .qty-step button:active{ transform:scale(.82); }
+  .tri-up{ width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:8px solid #fff; }
+  .tri-down{ width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:8px solid #fff; }
   /* 单价 × 数量 = 总价 计算模块（位于搜索栏下方） */
   .calc{ margin-top:12px; display:flex; flex-direction:column; gap:10px; }
   .calc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 10px; }
@@ -146,6 +163,12 @@
   .kv{ display:flex; align-items:flex-start; gap:6px; }
   .kv .k{ font-size:10.5px; color:#fff; flex:0 0 auto; white-space:nowrap; line-height:1.35; padding-top:1px;
     font-weight:600; text-shadow:0 0 8px rgba(255,255,255,.25); }
+  /* 价格标题：白色边框 + 可点击，选中后背景变黄 */
+  .kv .k.price-key{ border:1px solid #fff; border-radius:6px; padding:1px 6px; cursor:pointer; user-select:none;
+    transition:background .15s ease,color .15s ease,border-color .15s ease; }
+  .kv .k.price-key:hover{ background:rgba(255,255,255,.16); }
+  .kv .k.price-key:focus{ outline:2px solid rgba(250,204,21,.75); outline-offset:1px; }
+  .kv .k.price-key.sel{ background:#facc15; color:#1f2937; border-color:#facc15; text-shadow:none; }
   .kv .v{ font-size:13px; font-weight:600; line-height:1.35; min-width:0; word-break:break-word; color:#fff; }
   .kv .v.price{ color:#fff; }
   .kv .v .same{ font-size:15px; line-height:1; }
@@ -163,7 +186,7 @@
   footer{ text-align:center; color:#5b6b85; font-size:12px; padding:10px 20px 30px; }
   @media (max-width:880px){
     .layout{ grid-template-columns:1fr; }
-    .sidebar{ position:static; }
+    .sidebar{ position:static; max-height:none; overflow:visible; padding-right:0; }
   }
   @media (max-width:620px){
     .fields{ grid-template-columns:1fr; }
@@ -231,10 +254,14 @@
                 <button type="button" class="clear-x" data-calcclr="qUnitPrice" title="清空产品单价" aria-label="清空产品单价">×</button>
               </div>
             </div>
-            <div class="field">
+            <div class="field has-val">
               <label for="qQty">产品数量</label>
               <div class="input-wrap">
-                <input id="qQty" type="text" inputmode="numeric" autocomplete="off" placeholder="0">
+                <input id="qQty" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="1">
+                <span class="qty-step" role="group" aria-label="数量步进">
+                  <button type="button" class="tri-btn" data-step="up" aria-label="数量加 1"><span class="tri-up"></span></button>
+                  <button type="button" class="tri-btn" data-step="down" aria-label="数量减 1"><span class="tri-down"></span></button>
+                </span>
                 <button type="button" class="clear-x" data-calcclr="qQty" title="清空产品数量" aria-label="清空产品数量">×</button>
               </div>
             </div>
@@ -376,12 +403,24 @@ function modelSameAsSpec(fields){
   const m = String(fields['型号'] == null ? '' : fields['型号']).trim();
   return s !== '' && m !== '' && s === m;
 }
-function fieldRows(fields, sq, mq){
-  const order = ['型号','规格','含税人民币单价(¥)','线下美金价格($)','平台美金价格($)','自销价(¥)'];
-  const keys = Object.keys(fields||{});
+// 价格标题显示名映射（数据键不变，仅改界面描述）
+const PRICE_LABELS = {
+  '含税人民币单价(¥)':'含税人民币单价',
+  '线下美金价格($)':'线下美金单价',
+  '平台美金价格($)':'平台美金单价',
+  '自销价(¥)':'自销单价',
+  '原系统价格(¥)':'原系统单价',
+  '更改后系统价格(¥)':'改后系统单价'
+};
+function fieldRows(p, sq, mq){
+  const fields = p.fields||{};
+  const order = ['型号','规格','含税人民币单价(¥)','线下美金价格($)','平台美金价格($)','自销价(¥)','原系统价格(¥)','更改后系统价格(¥)'];
+  const keys = Object.keys(fields);
   keys.sort((a,b)=>{ const ia=order.indexOf(a), ib=order.indexOf(b);
     return (ia<0?99:ia) - (ib<0?99:ib); });
   let h = '';
+  const code = p.code||'', name = p.name||'';
+  const model = fields['型号']||'', spec = fields['规格']||'';
   for (const k of keys){
     const isPrice = /单价|价格/.test(k);
     let val;
@@ -389,9 +428,26 @@ function fieldRows(fields, sq, mq){
     else if (k === '规格') val = modelSameAsSpec(fields) ? '<span class="same" title="型号与规格相同">√</span>' : hl(fields[k], sq);
     else if (k === '型号') val = hl(fields[k], mq);
     else val = esc(fields[k]);
-    h += '<div class="kv"><span class="k">'+esc(k)+'</span><span class="v'+(isPrice?' price':'')+'">'+val+'</span></div>';
+    const label = PRICE_LABELS[k] || k;
+    if (isPrice){
+      // 可点击价格标题：携带该产品的编码/名称/型号/规格与价格值，供点击后回填搜索栏与产品单价
+      h += '<div class="kv"><span class="k price-key" role="button" tabindex="0"'
+        + ' data-val="'+esc(String(fields[k]))+'"'
+        + ' data-code="'+esc(code)+'" data-name="'+esc(name)+'"'
+        + ' data-model="'+esc(model)+'" data-spec="'+esc(spec)+'">'+esc(label)+'</span>'
+        + '<span class="v price">'+val+'</span></div>';
+    } else {
+      h += '<div class="kv"><span class="k">'+esc(label)+'</span><span class="v'+(isPrice?' price':'')+'">'+val+'</span></div>';
+    }
   }
   return h;
+}
+let selSig = null;   // {code, val} 当前选中的价格；重渲染后用于保持黄色高亮
+function applySel(){
+  if(!selSig) return;
+  document.querySelectorAll('.kv .k.price-key').forEach(x=>{
+    x.classList.toggle('sel', x.dataset.code===selSig.code && x.dataset.val===selSig.val);
+  });
 }
 function render(list, cq, nq, sq, mq){
   results.innerHTML = '';
@@ -405,10 +461,11 @@ function render(list, cq, nq, sq, mq){
         '<span class="code">'+hl(p.code, cq)+'</span>' +
         '<span class="name">'+hl(p.name, nq)+'</span>' +
       '</div>' +
-      '<div class="fields">'+fieldRows(p.fields, sq, mq)+'</div>' +
+      '<div class="fields">'+fieldRows(p, sq, mq)+'</div>' +
       remark;
     results.appendChild(card);
   });
+  applySel();   // 重渲染后重新应用选中高亮
 }
 const FIELDS = [qCode, qName, qSpec, qModel];
 function filter(){
@@ -460,6 +517,28 @@ document.querySelectorAll('.clear-x[data-clear]').forEach(btn => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { e.preventDefault(); resetAll(); }
 });
+// 价格标题点击：选中（黄底）→ 产品单价自动填充该价格；左侧搜索栏自动填充该产品编码/名称/型号/规格
+results.addEventListener('click', function(e){
+  const kEl = e.target.closest('.kv .k.price-key');
+  if(!kEl) return;
+  const code = kEl.dataset.code||'', val = kEl.dataset.val||'';
+  selSig = { code: code, val: val };
+  document.querySelectorAll('.kv .k.price-key.sel').forEach(x=>x.classList.remove('sel'));
+  kEl.classList.add('sel');
+  // 产品单价自动填充（触发千分位格式化 + 总价重算）
+  const up = $('qUnitPrice');
+  if(up){ up.value = val; up.dispatchEvent(new Event('input',{bubbles:true})); }
+  // 左侧搜索栏自动填充：编码 / 名称 / 型号 / 规格
+  [['qCode', kEl.dataset.code], ['qName', kEl.dataset.name], ['qModel', kEl.dataset.model], ['qSpec', kEl.dataset.spec]]
+    .forEach(([id, v])=>{ const el = $(id); if(el) el.value = (v==null?'':v); });
+  filter();   // 等同用户手动输入，重渲染并保持黄底高亮
+});
+// 价格标题键盘可达：Enter / 空格 触发点击
+results.addEventListener('keydown', function(e){
+  if((e.key==='Enter' || e.key===' ') && e.target.classList && e.target.classList.contains('price-key')){
+    e.preventDefault(); e.target.click();
+  }
+});
 // 左上角实时中国时间（UTC+8）：26px 纯白、HH:MM:SS + (UTC+8)。首绘与「时钟宽度锁定 logo 宽」由 hero 内联脚本完成（仅在 logo 加载后锁定，避免宽度抖动）；此处仅维持每秒刷新内联内容，不改动宽度。
 (function(){
   const el = $('chinaclock');
@@ -498,12 +577,30 @@ document.addEventListener('keydown', e => {
     const el = $(id); if(!el) return;
     el.value = ''; syncX(el); calc();
   }
+  function curQty(){ const v = numOf(qty); return isFinite(v) ? v : 0; }
+  function setQty(n){
+    if(!isFinite(n)) n = 0;
+    n = Math.max(0, Math.round(n));       // 最低 0，整数步进，禁止负数
+    qty.value = String(n);
+    syncX(qty); calc();
+  }
   [up, qty].forEach(el => {
-    el.addEventListener('input', () => { syncX(el); calc(); });
+    el.addEventListener('input', () => {
+      if(el === qty){                     // 手动输入也钳制为负数（双保险）
+        const v = numOf(qty);
+        if(isFinite(v) && v < 0){ qty.value = '0'; }
+      }
+      syncX(el); calc();
+    });
     el.addEventListener('keydown', e => {
       if(e.key === 'Escape'){ e.stopPropagation(); clearCalc(el.id); }   // 仅清本栏，不触发全局重置
     });
   });
+  // 数量步进三角（实心白三角）：上 +1 / 下 -1，默认 1，最低 0
+  const stepUp = document.querySelector('[data-step="up"]');
+  const stepDown = document.querySelector('[data-step="down"]');
+  if(stepUp) stepUp.addEventListener('click', () => setQty(curQty() + 1));
+  if(stepDown) stepDown.addEventListener('click', () => setQty(curQty() - 1));
   document.querySelectorAll('[data-calcclr]').forEach(b =>
     b.addEventListener('click', () => clearCalc(b.dataset.calcclr)));
   calc();
