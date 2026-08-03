@@ -126,15 +126,17 @@
     white-space:nowrap; pointer-events:none; }
   .fx-result b{ color:#fff; font-weight:700; font-variant-numeric:tabular-nums; }
   /* 汇率四选项：一行四列，数值显示在小标题下方 */
-  .fx-rates{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; align-items:stretch; }
-  .fx-rate-cell{ display:flex; flex-direction:column; gap:5px; padding:8px 7px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:10px; }
-  .fx-rate{ position:relative; display:flex; align-items:center; gap:6px; font-size:12px; color:#fff; }
-  .fx-rate input[type=checkbox]{ width:15px; height:15px; accent-color:#22d3ee; cursor:pointer; flex:none; }
-  .fx-rate > span.lbl{ white-space:nowrap; font-weight:600; }
-  .fx-rate-cell .fx-val{ font-size:14px; font-weight:700; color:#fff; font-variant-numeric:tabular-nums; letter-spacing:.2px; }
+  .fx-rates{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:9px; align-items:stretch; }
+  .fx-rate-cell{ min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; padding:7px 5px; cursor:pointer; user-select:none;
+    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:9px; transition:border-color .15s, background .15s; }
+  .fx-rate-cell:hover{ border-color:rgba(255,255,255,.28); }
+  .fx-rate-cell.sel{ border-color:var(--sky); background:rgba(34,211,238,.14); }
+  .fx-rate{ font-size:11.5px; font-weight:600; color:#fff; white-space:nowrap; }
+  .fx-rate-cell .fx-val{ width:100%; text-align:center; font-size:13px; font-weight:700; color:#fff; font-variant-numeric:tabular-nums; letter-spacing:.2px; overflow:hidden; text-overflow:ellipsis; }
   /* 固定汇率单元格：标题下为可编辑输入框 */
+  .fx-rate-cell.custom{ justify-content:center; }
   .fx-rate-cell.custom .fx-rate-in-wrap.sm{ width:100%; margin-left:0; }
-  .fx-rate-in-sm{ width:100%; padding:4px 16px 4px 8px; border-radius:8px; font-size:13px; text-align:center; color:var(--text);
+  .fx-rate-in-sm{ width:100%; min-width:0; padding:4px 16px 4px 8px; border-radius:8px; font-size:13px; text-align:center; color:var(--text);
     background:rgba(255,255,255,.06); border:1px solid var(--sky); outline:none; font-variant-numeric:tabular-nums; }
   .fx-rate-in-sm:focus{ border-color:var(--sky); }
   .fx-rate-in-wrap.sm .clear-x{ right:3px; width:13px; height:13px; font-size:9px; }
@@ -287,20 +289,20 @@
             </div>
           </div>
           <div class="fx-rates">
-            <div class="fx-rate-cell">
-              <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span></label>
-              <span class="fx-val" data-fxval="today">6.7910</span>
+            <div class="fx-rate-cell" data-rate="today" role="button" tabindex="0">
+              <div class="fx-rate">今日汇率</div>
+              <div class="fx-val" data-fxval="today">6.7910</div>
             </div>
-            <div class="fx-rate-cell">
-              <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl">月初汇率</span></label>
-              <span class="fx-val" data-fxval="monthStart">6.7910</span>
+            <div class="fx-rate-cell" data-rate="monthStart" role="button" tabindex="0">
+              <div class="fx-rate">月初汇率</div>
+              <div class="fx-val" data-fxval="monthStart">6.7910</div>
             </div>
-            <div class="fx-rate-cell">
-              <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl">月末汇率</span></label>
-              <span class="fx-val" data-fxval="monthEnd">6.7894</span>
+            <div class="fx-rate-cell" data-rate="monthEnd" role="button" tabindex="0">
+              <div class="fx-rate">月末汇率</div>
+              <div class="fx-val" data-fxval="monthEnd">6.7894</div>
             </div>
-            <div class="fx-rate-cell custom">
-              <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span></label>
+            <div class="fx-rate-cell custom" data-rate="custom" role="button" tabindex="0">
+              <div class="fx-rate">固定汇率</div>
               <span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span>
             </div>
           </div>
@@ -617,8 +619,7 @@ results.addEventListener('keydown', function(e){
   const mainWrap = document.querySelector('.fx-main');
   const customIn = $('fxCustom'); const rateVals = { today: RATE_CFG.today, monthStart: RATE_CFG.monthStart, monthEnd: RATE_CFG.monthEnd };
   const srcEl = document.querySelector('.fx-src');
-  const checks = {};
-  document.querySelectorAll('.fx-check').forEach(c => checks[c.dataset.rate] = c);
+  const rateCells = Array.from(document.querySelectorAll('.fx-rate-cell[data-rate]'));
   let active = 'today';      // 当前生效的汇率键
   let activeCur = 'rmb';     // 输入框当前货币：'rmb'=人民币在前 / 'usd'=美元在前
   const CUR_LABEL = { rmb: '人民币/RMB', usd: '美元/USD' };
@@ -691,18 +692,26 @@ results.addEventListener('keydown', function(e){
   fxSwap.addEventListener('click', toggleCur);
   fxCur.addEventListener('click', toggleCur);
   document.querySelectorAll('[data-fxclr="main"]').forEach(b => b.addEventListener('click', clearFxMain));
-  // 汇率选项切换
-  Object.keys(checks).forEach(k => {
-    checks[k].addEventListener('change', () => {
-      if(checks[k].checked){
-        active = k;
-        Object.keys(checks).forEach(j => { if(j !== k) checks[j].checked = false; });
-        if(k === 'custom' && customIn.value.trim() === '') customIn.value = '7.00';  // 固定汇率勾选默认 7.00
-        fmtResult();
-      } else if(active === k){
-        active = 'today'; checks['today'].checked = true; fmtResult();   // 不允许全部取消：回退今日汇率
-      }
-    });
+  // 汇率选项切换（无 ✅️，直接点击单元格按边框选取；选中单元格高亮边框）
+  function selectRate(k){
+    active = k;
+    rateCells.forEach(c => c.classList.toggle('sel', c.dataset.rate === k));
+    if(k === 'custom'){
+      if(customIn.value.trim() === '') customIn.value = '7.00';  // 固定汇率默认 7.00
+      customIn.focus();
+      if(customIn.select) customIn.select();
+    }
+    fmtResult();
+  }
+  const fxRatesEl = document.querySelector('.fx-rates');
+  fxRatesEl.addEventListener('click', e => {
+    const cell = e.target.closest('.fx-rate-cell[data-rate]');
+    if(cell) selectRate(cell.dataset.rate);
+  });
+  fxRatesEl.addEventListener('keydown', e => {
+    if((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('fx-rate-cell')){
+      e.preventDefault(); selectRate(e.target.dataset.rate);
+    }
   });
   // 固定汇率：聚焦且仍为默认 7.00 时自动清空，方便输入
   customIn.addEventListener('focus', () => {
@@ -739,6 +748,7 @@ results.addEventListener('keydown', function(e){
   });
   // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保刷新锚点生效
   showFxVals();
+  rateCells.forEach(c => c.classList.toggle('sel', c.dataset.rate === active));  // 默认今日汇率高亮边框
   srcEl.innerHTML = '汇率来源：今日 / 月初 / 月末 均取自「<b>'+esc(RATE_CFG.src)+'</b>」。';
   syncMainX(); fmtResult();
   // 每次打开/登录网页界面自动刷新（无自动化任务）：今日抓实时源；月初/月末按业务规则抓历史汇率源
