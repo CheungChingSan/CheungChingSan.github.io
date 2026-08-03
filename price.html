@@ -101,30 +101,20 @@
   /* 汇率换算模块（位于搜索栏下方） */
   .fx{ margin-top:12px; }
   .fx-title{ font-size:12px; font-weight:700; color:#fff; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.3); margin-bottom:8px; }
-  .fx-row{ display:block; }
+  .fx-row{ display:flex; flex-direction:column; align-items:stretch; gap:6px; }
+  .fx-row.reversed{ flex-direction:column-reverse; }
   .fx-field{ position:relative; display:flex; flex-direction:column; }
   .fx-inputwrap{ position:relative; display:flex; align-items:center; }
-  /* 单输入框：人民币/RMB（前/左）· 🔄切换（中）· 美元/USD 结果（后/右） */
-  .fx-inputwrap.fx-main{ border:1px solid var(--sky); background:rgba(255,255,255,.05); border-radius:11px; transition:.18s; }
-  .fx-inputwrap.fx-main:focus-within{ border-color:var(--sky); box-shadow:0 0 0 2px rgba(56,189,248,.18); }
-  #fxInput{ flex:1 1 auto; width:100%; min-width:0; border:none; background:transparent; color:var(--text);
-    font-size:15px; padding:11px 120px 11px 104px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; }
-  #fxInput::placeholder{ color:#5b6b85; }
-  /* 当前货币（前/左），可点击切换 */
-  .fx-cur{ position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:12px; font-weight:700; color:#fff;
-    letter-spacing:.3px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); border-radius:7px;
-    padding:3px 8px; cursor:pointer; user-select:none; white-space:nowrap; transition:.15s; }
-  .fx-cur:hover{ background:rgba(255,255,255,.16); }
-  /* 切换按钮：输入框内中间处 🔄 */
-  .fx-swap{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:30px; height:30px; border-radius:50%;
-    border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.08); color:#fff; cursor:pointer; font-size:14px; line-height:1;
-    display:flex; align-items:center; justify-content:center; transition:.2s; }
-  .fx-swap:hover{ background:var(--accent); color:#111; transform:translate(-50%,-50%) rotate(180deg); }
-  .fx-swap:active{ transform:translate(-50%,-50%) scale(.9); }
-  /* 换算结果（后/右，只读） */
-  .fx-result{ position:absolute; right:34px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--muted);
-    white-space:nowrap; pointer-events:none; }
-  .fx-result b{ color:#fff; font-weight:700; font-variant-numeric:tabular-nums; }
+  .fx-field input{ flex:1 1 auto; width:auto; min-width:0; border:1px solid var(--sky); background:rgba(255,255,255,.05); color:var(--text); font-size:15px; padding:11px 92px 11px 13px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; transition:.18s; }
+  .fx-field input::placeholder{ color:#5b6b85; }
+  .fx-field.src input{ border-color:var(--sky); }
+  /* RMB/USD 标识重新纳入输入框内（位于 [×] 按钮左侧） */
+  .fx-field .fx-unit{ position:absolute; right:34px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:700; color:#fff; letter-spacing:.5px; pointer-events:none; }
+  /* 切换按钮：单纯曲形双箭头符号，不要圆圈背景 */
+  .fx-swap{ align-self:center; flex:none; background:transparent; border:0; padding:3px; cursor:pointer; color:var(--accent);
+    display:flex; align-items:center; justify-content:center; line-height:0; transition:transform .25s ease; }
+  .fx-swap:hover{ transform:rotate(180deg); }
+  .fx-swap:active{ transform:rotate(180deg) scale(.9); }
   /* 汇率四选项：一行四列，数值显示在小标题下方 */
   .fx-rates{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:9px; align-items:stretch; }
   .fx-rate-cell{ min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; padding:7px 5px; cursor:pointer; user-select:none;
@@ -280,12 +270,22 @@
         <div class="fx">
           <div class="fx-title">汇率换算</div>
           <div class="fx-row">
-            <div class="fx-inputwrap fx-main">
-              <input id="fxInput" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
-              <span class="fx-cur" id="fxCur" title="点击切换 人民币 / 美元">人民币/RMB</span>
-              <button type="button" class="fx-swap" id="fxSwap" title="切换 人民币 / 美元" aria-label="切换货币">🔄</button>
-              <span class="fx-result" id="fxResult">美元/USD <b>0.00</b></span>
-              <button type="button" class="clear-x" data-fxclr="main" title="清空" aria-label="清空">×</button>
+            <div class="fx-field" id="fxFieldRmb">
+              <div class="fx-inputwrap">
+                <input id="fxRmb" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+                <span class="fx-unit">人民币/RMB</span>
+                <button type="button" class="clear-x" data-fxclr="main" title="清空" aria-label="清空">×</button>
+              </div>
+            </div>
+            <button type="button" class="fx-swap" id="fxSwap" title="点击切换 RMB / USD 位置与换算方向" aria-label="切换 RMB / USD">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg>
+            </button>
+            <div class="fx-field" id="fxFieldUsd">
+              <div class="fx-inputwrap">
+                <input id="fxUsd" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+                <span class="fx-unit">美元/USD</span>
+                <button type="button" class="clear-x" data-fxclr="main" title="清空" aria-label="清空">×</button>
+              </div>
             </div>
           </div>
           <div class="fx-rates">
@@ -613,20 +613,27 @@ results.addEventListener('keydown', function(e){
     b.addEventListener('click', () => clearCalc(b.dataset.calcclr)));
   calc();
 })();
-// ===== 汇率换算（单输入框 + 中间🔄切换 · 每次打开页面自动刷新）=====
+// ===== 汇率换算（双向输入 · 两行一列 · 每次打开页面自动刷新）=====
 (function(){
-  const fxInput = $('fxInput'), fxCur = $('fxCur'), fxSwap = $('fxSwap'), fxResult = $('fxResult');
-  const mainWrap = document.querySelector('.fx-main');
+  const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), usdField = $('fxFieldUsd'), rmbField = $('fxFieldRmb');
+  const swapBtn = $('fxSwap'), row = document.querySelector('.fx-row');
   const customIn = $('fxCustom'); const rateVals = { today: RATE_CFG.today, monthStart: RATE_CFG.monthStart, monthEnd: RATE_CFG.monthEnd };
   const srcEl = document.querySelector('.fx-src');
   const rateCells = Array.from(document.querySelectorAll('.fx-rate-cell[data-rate]'));
-  let active = 'today';      // 当前生效的汇率键
-  let activeCur = 'rmb';     // 输入框当前货币：'rmb'=人民币在前 / 'usd'=美元在前
-  const CUR_LABEL = { rmb: '人民币/RMB', usd: '美元/USD' };
-  attachThousands(fxInput, 2);   // 千分位：先于下方监听注册
+  let reversed = false;   // 视觉顺序：false=RMB 在上；true=USD 在上
+  let lastEdited = 'rmb'; // 当前换算源（最后输入的框）
+  let active = 'today';    // 当前生效的汇率键
+  // 千分位：必须先于下方 input 监听注册，保证 recalc 读到的是已格式化值（numOf 会剥离 ,）
+  attachThousands(rmbIn, 2);
+  attachThousands(usdIn, 2);
   function rate(){
     const v = active === 'custom' ? numOf(customIn) : rateVals[active];
     return (isFinite(v) && v > 0) ? v : (RATE_CFG.today || 6.7894);
+  }
+  // 高亮当前作为换算源的输入框（双向模式下无只读，仅作视觉反馈）
+  function applySrc(){
+    rmbField.classList.toggle('src', lastEdited === 'rmb');
+    usdField.classList.toggle('src', lastEdited === 'usd');
   }
   // 把今日/月初/月末汇率值同步到界面数值显示（标题下方）
   function showFxVals(){
@@ -636,62 +643,66 @@ results.addEventListener('keydown', function(e){
       sp.textContent = (isFinite(v) && v > 0) ? v.toFixed(4) : '';
     });
   }
-  // 单输入框换算：输入框=activeCur 金额，结果栏显示另一货币换算值（后/右）
-  function fmtResult(){
-    const r = rate();
-    const v = numOf(fxInput);
-    const other = isFinite(v) ? (activeCur === 'rmb' ? v / r : v * r) : NaN;
-    const otherLabel = activeCur === 'rmb' ? '美元/USD' : '人民币/RMB';
-    fxCur.textContent = CUR_LABEL[activeCur];
-    fxResult.innerHTML = otherLabel + ' <b>' + (isFinite(other) ? fmtThou(other.toFixed(2), 2) : '0.00') + '</b>';
-  }
   // 今日汇率刷新（独立）
   function applyToday(val){
     if(!(val > 0)) return;
     RATE_CFG.today = val; rateVals.today = val;
     showFxVals();
-    if(active === 'today') fmtResult();
+    if(active === 'today') recalc();
   }
   // 月初汇率：当月首工作日汇率（独立）
   function applyMonthStart(val){
     if(!(val > 0)) return;
     RATE_CFG.monthStart = val; rateVals.monthStart = val;
     showFxVals();
-    if(active === 'monthStart') fmtResult();
+    if(active === 'monthStart') recalc();
   }
   // 月末汇率：当月末工作日（实际）或上月末（预估）
   function applyMonthEnd(val){
     if(!(val > 0)) return;
     RATE_CFG.monthEnd = val; rateVals.monthEnd = val;
     showFxVals();
-    if(active === 'monthEnd') fmtResult();
+    if(active === 'monthEnd') recalc();
   }
-  // 主输入框 [×] 显隐
-  function syncMainX(){
-    const on = fxInput.value !== '';
-    if(mainWrap) mainWrap.classList.toggle('has-val', on);
-  }
-  // 清空换算框
-  function clearFxMain(){
-    fxInput.value = '';
-    syncMainX(); fmtResult();
-  }
-  // 🔄 / 货币标签：切换输入框货币（输入框数值含义翻转，结果同步重算，保持人民币在前美元在后）
-  function toggleCur(){
-    const v = numOf(fxInput);
+  // 双向换算：以最后输入的框为源，反推另一框
+  function recalc(){
     const r = rate();
-    const swapped = isFinite(v) ? (activeCur === 'rmb' ? v / r : v * r) : NaN;
-    activeCur = activeCur === 'rmb' ? 'usd' : 'rmb';
-    fxInput.value = isFinite(swapped) ? fmtThou(swapped.toFixed(2), 2) : '';
-    fmtResult();
+    if(lastEdited === 'rmb'){
+      const v = numOf(rmbIn);
+      usdIn.value = isFinite(v) ? fmtThou((v / r).toFixed(2), 2) : '';
+    } else {
+      const v = numOf(usdIn);
+      rmbIn.value = isFinite(v) ? fmtThou((v * r).toFixed(2), 2) : '';
+    }
   }
-  fxInput.addEventListener('input', () => { syncMainX(); fmtResult(); });
-  fxInput.addEventListener('keydown', e => {
+  // 主输入框（RMB/USD）[×] 显隐：任一有值即两个框都显示
+  function syncMainX(){
+    const on = (rmbIn.value !== '' || usdIn.value !== '');
+    [rmbIn, usdIn].forEach(inp => {
+      const w = inp.closest('.fx-inputwrap');
+      if(w) w.classList.toggle('has-val', on);
+    });
+  }
+  // 清空 RMB/USD 两个换算框
+  function clearFxMain(){
+    rmbIn.value = ''; usdIn.value = '';
+    syncMainX(); recalc();
+  }
+  // 双向输入：任一框输入即作为源反推另一框
+  rmbIn.addEventListener('input', () => { lastEdited = 'rmb'; applySrc(); syncMainX(); recalc(); });
+  usdIn.addEventListener('input', () => { lastEdited = 'usd'; applySrc(); syncMainX(); recalc(); });
+  [usdIn, rmbIn].forEach(inp => inp.addEventListener('keydown', e => {
     if(e.key === 'Escape'){ e.stopPropagation(); clearFxMain(); }
-  });
-  fxSwap.addEventListener('click', toggleCur);
-  fxCur.addEventListener('click', toggleCur);
+  }));
   document.querySelectorAll('[data-fxclr="main"]').forEach(b => b.addEventListener('click', clearFxMain));
+  // 切换上下视觉顺序：交换两框值使数值随位置移动，新上方框作为源
+  swapBtn.addEventListener('click', () => {
+    const t = rmbIn.value; rmbIn.value = usdIn.value; usdIn.value = t;
+    reversed = !reversed;
+    row.classList.toggle('reversed', reversed);
+    lastEdited = reversed ? 'usd' : 'rmb';
+    applySrc(); syncMainX(); recalc();
+  });
   // 汇率选项切换（无 ✅️，直接点击单元格按边框选取；选中单元格高亮边框）
   function selectRate(k){
     active = k;
@@ -701,7 +712,7 @@ results.addEventListener('keydown', function(e){
       customIn.focus();
       if(customIn.select) customIn.select();
     }
-    fmtResult();
+    recalc();
   }
   const fxRatesEl = document.querySelector('.fx-rates');
   fxRatesEl.addEventListener('click', e => {
@@ -724,14 +735,14 @@ results.addEventListener('keydown', function(e){
   const customWrap = customIn.closest('.fx-rate-in-wrap');
   customIn.addEventListener('input', () => {
     if(customWrap) customWrap.classList.toggle('has-val', customIn.value !== '');
-    if(active === 'custom') fmtResult();
+    if(active === 'custom') recalc();
   });
   customIn.addEventListener('keydown', e => {
     if(e.key === 'Escape'){
       e.stopPropagation();
       customIn.value = '';
       if(customWrap) customWrap.classList.remove('has-val');
-      if(active === 'custom') fmtResult();
+      if(active === 'custom') recalc();
     }
   });
   // [×] 清除汇率选项输入框（固定汇率）
@@ -743,14 +754,14 @@ results.addEventListener('keydown', function(e){
       el.value = '';
       const wrap = el.closest('.fx-rate-in-wrap');
       if(wrap) wrap.classList.remove('has-val');
-      if(active === 'custom') fmtResult();   // 仅固定汇率有 [×]，清空后回退当前生效汇率
+      if(active === 'custom') recalc();   // 仅固定汇率有 [×]，清空后回退当前生效汇率
     });
   });
   // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保刷新锚点生效
   showFxVals();
   rateCells.forEach(c => c.classList.toggle('sel', c.dataset.rate === active));  // 默认今日汇率高亮边框
   srcEl.innerHTML = '汇率来源：今日 / 月初 / 月末 均取自「<b>'+esc(RATE_CFG.src)+'</b>」。';
-  syncMainX(); fmtResult();
+  applySrc(); syncMainX(); recalc();
   // 每次打开/登录网页界面自动刷新（无自动化任务）：今日抓实时源；月初/月末按业务规则抓历史汇率源
   if(RATE_CFG.autoUpdate){
     (function autoRate(){
