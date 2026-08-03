@@ -656,11 +656,7 @@ document.addEventListener('keydown', e => {
   // 今日/月初/月末为独立取值，仅勾选无输入框；汇率值由 rateVals 提供（autoRate 每次打开页面按业务规则刷新）
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   showFxVals();
-  srcEl.innerHTML = '汇率来源（最终来源均为央行汇率）：今日 / 月初 / 月末 均取自「<b>'+esc(RATE_CFG.src)+'</b>」。'
-    + ' 今日('+RATE_CFG.todayDate+') '+RATE_CFG.today.toFixed(4)
-    + '；月初(首工作日 '+RATE_CFG.monthStartDate+') '+RATE_CFG.monthStart.toFixed(4)
-    + '；月末(末工作日 '+RATE_CFG.monthEndDate+') '+RATE_CFG.monthEnd.toFixed(4)
-    + '。';
+  srcEl.innerHTML = '汇率来源（最终来源均为央行汇率）：今日 / 月初 / 月末 均取自「<b>'+esc(RATE_CFG.src)+'</b>」。';
   applySrc(); syncMainX(); recalc();
   // 每次打开/登录网页界面自动刷新（无自动化任务）：今日抓实时源；月初/月末按业务规则抓历史汇率源
   if(RATE_CFG.autoUpdate){
