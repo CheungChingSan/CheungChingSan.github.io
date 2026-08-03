@@ -63,7 +63,7 @@
   .search-panel{ background:rgba(15,23,42,.66); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:14px;
     backdrop-filter:blur(12px); box-shadow:0 12px 34px rgba(0,0,0,.38); }
   /* 搜索栏：两行两列（编码/名称 · 型号/规格） */
-  .search-col{ display:grid; grid-template-columns:1fr; gap:10px; }
+  .search-col{ display:grid; grid-template-columns:1fr; gap:8px; }
   .field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
   .field label{ font-size:12px; color:#fff; font-weight:700; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.35); }
   .field .input-wrap{ position:relative; display:flex; align-items:center; }
@@ -91,7 +91,7 @@
   .tri-up{ width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:8px solid #fff; }
   .tri-down{ width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:8px solid #fff; }
   /* 单价 × 数量 = 总价 计算模块（位于搜索栏下方） */
-  .calc{ margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+  .calc{ margin-top:8px; display:flex; flex-direction:column; gap:8px; }
   .calc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 10px; }
   .calc .field input{ font-variant-numeric:tabular-nums; }
   /* 总价为计算结果，不可键入 */
@@ -99,7 +99,7 @@
   .field input[readonly]:focus{ border-color:var(--sky); }
   .calc-total input{ color:var(--accent); font-weight:700; }
   /* 汇率换算模块（位于搜索栏下方） */
-  .fx{ margin-top:12px; }
+  .fx{ margin-top:8px; }
   .fx-title{ font-size:12px; font-weight:700; color:#fff; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.3); margin-bottom:8px; }
   .fx-row{ display:flex; flex-direction:column; align-items:stretch; gap:6px; }
   .fx-row.reversed{ flex-direction:column-reverse; }
