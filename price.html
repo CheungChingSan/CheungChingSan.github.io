@@ -88,11 +88,11 @@
   .fx-row.reversed{ flex-direction:column-reverse; }
   .fx-field{ position:relative; display:flex; flex-direction:column; }
   .fx-inputwrap{ position:relative; display:flex; align-items:center; }
-  .fx-field input{ flex:1 1 auto; width:auto; min-width:0; border:1px solid var(--sky); background:rgba(255,255,255,.05); color:var(--text); font-size:15px; padding:11px 62px 11px 13px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; transition:.18s; }
+  .fx-field input{ flex:1 1 auto; width:auto; min-width:0; border:1px solid var(--sky); background:rgba(255,255,255,.05); color:var(--text); font-size:15px; padding:11px 92px 11px 13px; border-radius:11px; outline:none; font-variant-numeric:tabular-nums; transition:.18s; }
   .fx-field input::placeholder{ color:#5b6b85; }
   .fx-field.src input{ border-color:var(--sky); }
   /* RMB/USD 标识重新纳入输入框内（位于 [×] 按钮左侧） */
-  .fx-field .fx-unit{ position:absolute; right:34px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:700; color:var(--sky); letter-spacing:.5px; pointer-events:none; }
+  .fx-field .fx-unit{ position:absolute; right:34px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:700; color:#fff; letter-spacing:.5px; pointer-events:none; }
   /* 切换按钮：单纯曲形双箭头符号，不要圆圈背景 */
   .fx-swap{ align-self:center; flex:none; background:transparent; border:0; padding:3px; cursor:pointer; color:var(--accent);
     display:flex; align-items:center; justify-content:center; line-height:0; transition:transform .25s ease; }
@@ -252,7 +252,7 @@
             <div class="fx-field" id="fxFieldRmb">
               <div class="fx-inputwrap">
                 <input id="fxRmb" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
-                <span class="fx-unit">RMB</span>
+                <span class="fx-unit">人民币/RMB</span>
                 <button type="button" class="clear-x" data-fxclr="main" title="清空" aria-label="清空">×</button>
               </div>
             </div>
@@ -262,7 +262,7 @@
             <div class="fx-field" id="fxFieldUsd">
               <div class="fx-inputwrap">
                 <input id="fxUsd" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
-                <span class="fx-unit">USD</span>
+                <span class="fx-unit">美元/USD</span>
                 <button type="button" class="clear-x" data-fxclr="main" title="清空" aria-label="清空">×</button>
               </div>
             </div>
@@ -274,7 +274,7 @@
             <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
           <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7910</b> RMB</div>
-          <div class="fx-src">汇率来源（最终来源均为央行汇率）：今日 / 月初 / 月末 均取自「中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价」。第三方 fawazahmed0 为市场汇率(≈6.75)，非央行中间价，已弃用。</div>
+          <div class="fx-src">汇率来源（最终来源均为央行汇率）：今日 / 月初 / 月末 均取自「中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价」。</div>
           <div class="fx-disc">预估月末汇率仅供内部经营测算参考，不作为账务处理依据。</div>
         </div>
       </div>
@@ -660,7 +660,7 @@ document.addEventListener('keydown', e => {
     + ' 今日('+RATE_CFG.todayDate+') '+RATE_CFG.today.toFixed(4)
     + '；月初(首工作日 '+RATE_CFG.monthStartDate+') '+RATE_CFG.monthStart.toFixed(4)
     + '；月末(末工作日 '+RATE_CFG.monthEndDate+') '+RATE_CFG.monthEnd.toFixed(4)
-    + '。第三方 fawazahmed0 为市场汇率(≈6.75)，非央行中间价，已弃用。';
+    + '。';
   applySrc(); syncMainX(); recalc();
   // 每次打开/登录网页界面自动刷新（无自动化任务）：今日抓实时源；月初/月末按业务规则抓历史汇率源
   if(RATE_CFG.autoUpdate){
