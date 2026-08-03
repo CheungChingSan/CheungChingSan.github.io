@@ -44,6 +44,9 @@
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>国家详情 · 新华健康外贸客户管理系统</title>
 <style>
   :root{
@@ -56,8 +59,8 @@
   input, textarea, select{ cursor:text; }
   .mapwrap svg{cursor:none!important}
   .mapwrap svg *{cursor:none!important}
-  /* 地图浮层按钮：隐藏系统指针，只显示跟随的 LOL 小手（避免小手与箭头重叠） */
-  .mapwrap button{cursor:none!important}
+  /* 仅屏蔽地图 svg 区域内部的按钮光标（跟随 LOL 小手）；顶部工具条的按钮不在此列，保留 LOL 悬停光标 */
+  .mapwrap #map button{cursor:none!important}
   .country-cursor{ position:fixed; left:0; top:0; width:26px; height:24px; pointer-events:none; z-index:99999; display:none; will-change:transform; user-select:none; -webkit-user-drag:none; }
   /* 进入国家地图区域时全局屏蔽所有系统/CSS光标，只保留 DOM 跟随的 LOL 小手（消除拖拽时 body 光标穿透叠加的"双重手"） */
   body.over-map, body.over-map *{ cursor:none !important; }
@@ -83,15 +86,31 @@
     color:#fff; font-size:20px; font-weight:700; white-space:nowrap;
     font-variant-numeric:tabular-nums; letter-spacing:.5px;
   }
-  .layout{ display:flex; gap:16px; padding:16px; align-items:stretch; }
+  .layout{ display:flex; gap:16px; padding:16px; align-items:flex-start; }
   .infobar{ width:300px; flex:none; display:flex; flex-direction:column; gap:14px; }
   .custbar{ width:372px; flex:none; }
+  /* 地图窗口固定尺寸：与左右栏彻底解耦，所有国家地图尺寸一致、底部按钮位置恒定 */
   .mapwrap{
-    flex:1; position:relative; min-height:480px; border-radius:18px; overflow:hidden;
+    flex:none; width:calc(100% - 300px - 372px - 32px); height:calc(100vh - 92px);
+    position:relative; border-radius:18px; overflow:hidden; display:flex; flex-direction:column;
     background:radial-gradient(120% 120% at 50% 28%, #0e1a2e 0%, #0a1322 60%, #070d18 100%);
     border:1px solid var(--line);
   }
-  #map{ position:absolute; inset:0; }
+  /* 功能按钮条：地图窗口顶部独立区域，普通流布局，不覆盖地图 */
+  .map-toolbar{
+    flex:none; height:46px; display:flex; align-items:center; gap:8px; padding:0 12px;
+    border-bottom:1px solid var(--line); background:rgba(10,18,32,.55);
+  }
+  .map-toolbar button{
+    padding:7px 12px; border-radius:10px; border:1px solid var(--line);
+    background:rgba(10,18,32,.8); color:var(--txt); font-size:12px; cursor:url('assets/cursors/LoLHover.png') 1 2, pointer; transition:.2s; white-space:nowrap;
+  }
+  .map-toolbar button:hover{ border-color:var(--accent); }
+  .map-toolbar button.active{ background:rgba(56,189,248,.32); border-color:var(--accent); color:#fff; }
+  /* 静态锁图：区域 path 置为不可交互 → 无悬停高亮/点击；光标恢复默认，避免误以为可拖拽 */
+  #map.static-locked .prov-fill, #map.static-locked .prov-line, #map.static-locked path.adm2{ pointer-events:none !important; }
+  #map.static-locked{ cursor:url('assets/cursors/LoLNormal.png') 3 2, default; }  /* 静态锁图：光标维持 LOL 小手（DOM 图接管；此规则仅在光标图隐藏时兜底） */
+  #map{ flex:1; position:relative; min-height:0; contain:layout paint; }
   .card{
     background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px 18px;
     backdrop-filter:blur(10px);
@@ -119,13 +138,7 @@
   }
   .map-ctrl button:hover{ background:rgba(56,189,248,.2); border-color:var(--accent); }
   .map-ctrl button.active{ background:rgba(56,189,248,.32); border-color:var(--accent); color:#fff; }
-  .map-toggle{ position:absolute; left:14px; top:14px; z-index:5; display:flex; gap:8px; }
-  .map-toggle button{
-    padding:7px 12px; border-radius:10px; border:1px solid var(--line);
-    background:rgba(10,18,32,.8); color:var(--txt); font-size:12px; cursor:url('assets/cursors/LoLHover.png') 1 2, pointer; transition:.2s;
-  }
-  .map-toggle button:hover{ border-color:var(--accent); }
-  .map-toggle button.active{ background:rgba(56,189,248,.32); border-color:var(--accent); color:#fff; }
+  .map-toggle{ display:none; }
   /* 整页头部右侧「返回系统」按钮：与「返回世界地图」同款样式，靠右对齐 */
   .sys-btn{
     margin-left:auto;
@@ -141,17 +154,19 @@
     box-shadow:0 4px 14px rgba(0,0,0,.35); pointer-events:none; white-space:nowrap; }
   .cust-stat b{ color:#86efac; }
   .map-tip{
-    position:fixed; z-index:30; display:none; pointer-events:none; padding:5px 10px; border-radius:8px;
+    position:fixed; left:0; top:0; z-index:30; display:none; pointer-events:none; padding:5px 10px; border-radius:8px;
     background:rgba(8,15,30,.92); border:1px solid var(--accent); color:#fff; font-size:12px; font-weight:600;
-    box-shadow:0 6px 20px rgba(0,0,0,.4);
+    box-shadow:0 6px 20px rgba(0,0,0,.4); will-change:transform;
   }
   .prov-fill{ fill:rgba(56,189,248,.12); stroke:none; transition:fill .15s; cursor:url('assets/cursors/LoLHover.png') 1 2, pointer; }
   .prov-fill:hover{ fill:rgba(56,189,248,.32); }
   /* 一级行政区域(ADM1)实线：上层高亮骨架，加暗色光晕使其清晰压在二级区域虚线之上 */
   .prov-line{ fill:none; stroke:#eaf2fb; stroke-width:1.5; stroke-opacity:.96; pointer-events:none;
+    vector-effect:non-scaling-stroke;
     filter:drop-shadow(0 0 0.9px #05080f) drop-shadow(0 0 0.9px #05080f); }
   /* 二次构建的国家轮廓（由一级行政区域并集生成），最上层加粗强调，确保行政区轮廓在其内 */
   .country-outline{ fill:none; stroke:#eaf6ff; stroke-width:2.4; stroke-opacity:1; pointer-events:none;
+    vector-effect:non-scaling-stroke;
     filter:drop-shadow(0 0 1.2px #05080f) drop-shadow(0 0 1.2px #05080f); }
   /* 偏远海外领地小窗（参照中国南海诸岛做法）：玻璃质感面板，独立投影绘制各领地 */
   .map-inset{ position:absolute; right:14px; top:14px; width:232px; background:rgba(10,18,32,.82);
@@ -159,15 +174,26 @@
     box-shadow:0 8px 24px rgba(0,0,0,.35); }
   .map-inset-title{ font-size:11px; color:var(--accent); font-weight:700; letter-spacing:.5px; margin-bottom:4px; text-align:center; }
   .map-inset-svg{ display:block; }
-  .inset-shape{ fill:rgba(56,189,248,.20); stroke:#eaf2fb; stroke-width:1; pointer-events:all; cursor:url('assets/cursors/LoLHover.png') 1 2, pointer; transition:fill .15s; }
+  .inset-shape{ fill:rgba(56,189,248,.20); stroke:#eaf2fb; stroke-width:1; pointer-events:all; cursor:url('assets/cursors/LoLHover.png') 1 2, pointer; transition:fill .15s; vector-effect:non-scaling-stroke; }
   .inset-shape:hover{ fill:rgba(56,189,248,.48); }
   .inset-label{ fill:#cfe3f5; font-size:8px; text-anchor:middle; font-weight:600; pointer-events:none; }
   /* 二级行政区域(ADM2)虚线：下层弱化纹理，dasharray + 更淡更细避免与省界重叠混乱 */
+  /* ADM2 fill 用 rgba(0,0,0,0) 而非 none：painted but invisible → fill area 在所有浏览器中可靠拦截指针事件，
+     杜绝点击 ADM2 透明内部时穿透到底层 ADM1 prov-fill 选中一级行政区域（根因：fill:none 的 fill area 不拦截事件） */
   .adm2{
-    fill:none; stroke:#67e8f9; stroke-width:.5; stroke-dasharray:3 2.6; opacity:.72;
-    pointer-events:all; cursor:crosshair; transition:stroke .15s, stroke-width .15s, stroke-dasharray .15s, opacity .15s;
+    fill:rgba(0,0,0,0); stroke:#67e8f9; stroke-width:.5; stroke-dasharray:3 2.6; opacity:.72;
+    vector-effect:non-scaling-stroke;
+    pointer-events:all; cursor:crosshair; transition:stroke .15s, opacity .15s;   /* 去掉 stroke-dasharray/stroke-width 过渡：鼠标划过多个区域时逐个重栅格化描边=重绘风暴 */
   }
   .adm2:hover{ stroke:#fbb923; stroke-width:1.1; stroke-dasharray:none; opacity:1; }
+  /* 3D 浮雕突出层（与世界地图同款）：悬停一级/二级行政区域时整块区域「从平面探出」的实体浮雕 */
+  .emboss-layer{ pointer-events:none; }
+  .emboss-layer path.emboss-shadow{ fill:rgba(0,0,0,.32); }   /* 去 SVG 高斯模糊滤镜(url(#embossShadow))：每次换区域重绘滤镜是悬停卡顿主因；平涂暗影同样有立体落影感，重绘成本≈0 */
+  .emboss-layer path.emboss-side{ stroke:none; }
+  .emboss-layer path.emboss-top{
+    fill:url(#embossTopGrad); stroke:#ffd400; stroke-width:1.4;
+    vector-effect:non-scaling-stroke; paint-order:stroke fill;
+  }
   .marker-cap-star{ pointer-events:none; }
   .marker-plane-g{ pointer-events:all; cursor:url('assets/cursors/LoLHover.png') 1 2, pointer; }
   .marker-air-label{ fill:#eafff5; font-size:11px; text-anchor:middle; paint-order:stroke; stroke:#06281c; stroke-width:3px; pointer-events:none; display:none; font-weight:600; }
@@ -179,10 +205,10 @@
   }
   .search:focus{ outline:none; border-color:var(--accent); }
   .cust-count{ font-size:12px; color:var(--muted); margin-bottom:8px; }
-  .cust-table tbody tr{ cursor:pointer; }
+  .cust-table tbody tr{ cursor:url('assets/cursors/LoLHover.png') 1 2, pointer; }
   .cust-table tbody tr:hover{ background:rgba(56,189,248,.10); }
   .cust-table tbody tr.sel{ background:rgba(56,189,248,.22); outline:1px solid var(--accent); }
-  .cust-pt-g.cust-hl circle{ fill:#fde047 !important; }  /* 纯黄单色，同尺寸同位置，无高亮无边框 */
+  .cust-pt-g.cust-hl circle.cust-pt{ fill:#22c55e !important; }  /* 仅可见圆点变绿，透明命中圈不参与 → 绿点与黄点同尺寸同位置，无高亮无边框 */
   /* 选中行政区（一级/二级）高亮：仅描边/底色提示，不发光 */
   .prov-fill.prov-sel{ fill:rgba(245,158,11,.26) !important; }
   .prov-line.prov-sel{ stroke:#f59e0b !important; stroke-width:2.4 !important; }
@@ -195,12 +221,99 @@
   .cust-table td.src{ color:var(--teal); font-size:11px; }
   .cust-empty{ font-size:12px; color:var(--muted); line-height:1.6; padding:8px 2px; }
   @media (max-width:980px){
-    .layout{ flex-direction:column; }
-    .infobar,.custbar{ width:auto; }
-    .mapwrap{ min-height:400px; }
+    /* 顶栏换行：返回按钮与返回系统放第一行，国名+时钟占满第二行，避免横向挤爆 */
+    .topbar{ flex-wrap:wrap; gap:10px; padding:0 12px; height:auto; min-height:60px; align-items:center; }
+    .topbar .back-btn{ order:1; padding:6px 10px; font-size:12px; }
+    .topbar .sys-btn{ order:2; margin-left:auto; padding:6px 10px; font-size:12px; }
+    .topbar .title-wrap{ order:3; flex:1 1 100%; min-width:0; gap:8px; }
+    .title-wrap h1{ font-size:16px; }
+    .title-wrap .clock{ font-size:14px; }
+    .title-wrap .meta{ font-size:11px; }
+    /* 主体纵向堆叠，间距收紧 */
+    .layout{ flex-direction:column; padding:10px; gap:12px; }
+    .infobar, .custbar{ width:auto; }
+    .mapwrap{ width:auto; height:66vh; border-radius:14px; }
+    .map-toolbar{ padding:0 10px; gap:6px; }
+    .map-toolbar button{ padding:6px 10px; font-size:11px; }
+    /* 海外领地小窗在手机上缩小，避免盖住整张地图 */
+    .map-inset{ width:140px; padding:6px; }
+    .map-inset-title{ font-size:10px; }
+    .inset-label{ font-size:7px; }
+    .inset-shape{ stroke-width:1; }
+    /* 客户表区高度收敛，减少无谓长滚 */
+    .cust-table-wrap{ max-height:55vh; }
+    .cust-stat{ font-size:10px; padding:4px 8px; right:54px; }
+    .map-status{ font-size:10px; padding:4px 8px; max-width:55%; }
   }
+  /* 路线规划清单弹窗（右上角浮动小窗，玻璃拟态） */
+  .route-list-panel{
+    position:absolute; top:64px; right:14px; width:300px; max-height:72vh; z-index:20;
+    display:flex; flex-direction:column; overflow:hidden;
+    background:rgba(10,18,32,.82); backdrop-filter:blur(18px) saturate(140%);
+    border:1px solid var(--line); border-radius:14px; box-shadow:0 12px 34px rgba(0,0,0,.5);
+    font-family:inherit;
+  }
+  .rl-head{ display:flex; align-items:center; justify-content:space-between; padding:11px 13px 9px; border-bottom:1px solid var(--line); }
+  .rl-title{ font-size:13px; font-weight:700; color:#fff; }
+  .rl-close{ background:transparent; border:none; color:var(--muted); font-size:19px; line-height:1; cursor:pointer; padding:0 4px; }
+  .rl-close:hover{ color:#fff; }
+  .rl-modes{ display:flex; gap:6px; padding:9px 13px; border-bottom:1px solid var(--line); }
+  .rl-mode{ flex:1; border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--muted);
+    padding:6px 8px; border-radius:9px; font-size:12px; cursor:pointer; transition:.18s; }
+  .rl-mode:hover{ border-color:var(--accent); color:#fff; }
+  .rl-mode.active{ background:rgba(56,189,248,.3); border-color:var(--accent); color:#fff; font-weight:700; }
+  .rl-body{ list-style:none; margin:0; padding:6px 8px 10px; overflow-y:auto; }
+  .rl-body::-webkit-scrollbar{ width:7px; }
+  .rl-body::-webkit-scrollbar-thumb{ background:rgba(56,189,248,.4); border-radius:4px; }
+  .rl-row{ display:flex; align-items:flex-start; gap:9px; padding:7px 7px; border-radius:9px; transition:.15s; }
+  .rl-row:hover{ background:rgba(56,189,248,.12); }
+  .rl-idx{ flex:0 0 22px; height:22px; border-radius:50%; background:rgba(56,189,248,.22); color:#dff3ff;
+    font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .rl-badge{ flex:0 0 22px; height:22px; border-radius:7px; background:rgba(34,197,94,.28); color:#bbf7d0;
+    font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .rl-main{ display:flex; flex-direction:column; min-width:0; }
+  .rl-name{ font-size:12.5px; font-weight:600; color:#eaf6ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rl-sub{ font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rl-start .rl-name{ color:#86efac; }
+  .rl-end .rl-name{ color:#fcd34d; }
+  .rl-empty{ padding:18px 12px; color:var(--muted); font-size:12px; line-height:1.6; }
 </style>
-</head>
+<link rel="preconnect" href="https://beacon.cdn.qq.com" crossorigin>
+<script>
+/* 腾讯灯塔统计：非阻塞异步加载，避免阻塞首屏渲染（遥测逻辑不变） */
+(function(){
+  function loadBeacon(){
+    try{
+      var s=document.createElement('script');
+      s.src='https://beacon.cdn.qq.com/sdk/4.5.9/beacon_web.min.js';
+      s.async=true;
+      s.onload=function(){
+        try{
+          var beacon=new BeaconAction({
+            appkey:'0WEB06U85YBSLJNL',
+            versionCode:'1.0.0',
+            channelID:'share',
+            delay:1000,
+            sessionDuration:30*60*1000,
+            isOversea:false,
+            needReportRqdEvent:false
+          });
+          beacon.onDirectUserAction('preview_page_view',{
+            'url':location.href,
+            'referrer':document.referrer,
+            'title':document.title,
+            'sandbox_id':'eb78d6a12e694d958a1cb0dc620d4bcd'
+          });
+        }catch(e){}
+      };
+      s.onerror=function(){};
+      document.head.appendChild(s);
+    }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadBeacon);
+  else loadBeacon();
+})();
+</script></head>
 <body>
   <header class="topbar">
     <button class="back-btn" id="backBtn">← 返回世界地图</button>
@@ -234,13 +347,18 @@
     </aside>
 
     <section class="mapwrap">
-      <div id="map"></div>
-      <div id="inset" class="map-inset" style="display:none;"></div>
-      <div class="map-toggle">
+      <div class="map-toolbar">
         <button id="adm2toggle">显示二级行政区域</button>
         <button id="custtoggle" class="active">隐藏客户位点</button>
         <button id="multitrack">开启多点追踪</button>
+        <button id="staticlock">开启静态锁图</button>
+        <button id="hideunsel">隐藏未选客户</button>
+        <button id="selectDepot">选取计划位置</button>
+        <button id="routeplan">开启路线规划</button>
+        <button id="routelist">路线规划清单</button>
       </div>
+      <div id="map"><div id="depotOverlay" style="display:none;position:absolute;inset:0;z-index:4;cursor:crosshair"></div></div>
+      <div id="inset" class="map-inset" style="display:none;"></div>
       <div class="map-ctrl">
         <button id="zin" title="放大">＋</button>
         <button id="zout" title="缩小">－</button>
@@ -248,6 +366,17 @@
       </div>
       <div id="mapStatus" class="map-status">地图加载中…</div>
       <div id="custStat" class="cust-stat">信息总计 <b>0</b> 个 · 位置统计 <b>0</b> 个</div>
+      <div id="routeListPanel" class="route-list-panel" style="display:none;">
+        <div class="rl-head">
+          <span id="routeListTitle" class="rl-title">路线规划清单</span>
+          <button id="routeListClose" class="rl-close" title="关闭">×</button>
+        </div>
+        <div class="rl-modes">
+          <button class="rl-mode" data-mode="cw">顺时针顺序</button>
+          <button class="rl-mode" data-mode="ccw">逆时针顺序</button>
+        </div>
+        <ol id="routeListBody" class="rl-body"></ol>
+      </div>
     </section>
 
     <aside class="custbar">
@@ -269,9 +398,9 @@
 
   <div id="mapTip" class="map-tip"></div>
 
-  <script src="d3.v7.min.js"></script>
-  <script src="topojson-client.min.js"></script>
-  <script src="country_meta.js"></script>
-  <script src="app.js"></script>
+  <script defer src="d3.v7.min.js"></script>
+  <script defer src="topojson-client.min.js"></script>
+  <script defer src="country_meta.js"></script>
+  <script defer src="app.js?v=202607281537"></script>
 </body>
 </html>
