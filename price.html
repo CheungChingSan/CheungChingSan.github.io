@@ -273,8 +273,7 @@
             <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl-block"><span class="lbl">月末汇率</span><i class="fx-note" id="fxMonthEndNote">预估·上月末</i></span><span class="fx-val" data-fxval="monthEnd">6.7894</span></label>
             <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
-          <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7910</b> RMB</div>
-          <div class="fx-src">汇率来源（最终来源均为央行汇率）：今日 / 月初 / 月末 均取自「中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价」。</div>
+          <div class="fx-src">汇率来源：今日 / 月初 / 月末 均取自「中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价」。</div>
           <div class="fx-disc">预估月末汇率仅供内部经营测算参考，不作为账务处理依据。</div>
         </div>
       </div>
@@ -512,7 +511,7 @@ document.addEventListener('keydown', e => {
 // ===== 汇率换算（双向输入 · 每次打开页面自动刷新）=====
 (function(){
   const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), usdField = $('fxFieldUsd'), rmbField = $('fxFieldRmb');
-  const swapBtn = $('fxSwap'), rateVal = $('fxRateVal'), row = document.querySelector('.fx-row');
+  const swapBtn = $('fxSwap'), row = document.querySelector('.fx-row');
   const customIn = $('fxCustom'); const rateVals = { today: RATE_CFG.today, monthStart: RATE_CFG.monthStart, monthEnd: RATE_CFG.monthEnd };
   const srcEl = document.querySelector('.fx-src');
   const checks = {};
@@ -544,7 +543,6 @@ document.addEventListener('keydown', e => {
   function applyToday(val, srcText){
     if(!(val > 0)) return;
     RATE_CFG.today = val; rateVals.today = val;
-    rateVal.textContent = val.toFixed(4);
     showFxVals();   // 同步刷新「今日汇率」列表数字（避免实时源刷新后列表仍显示离线兜底值）
     // 来源说明保持初始化时的静态文案（汇率来源：今日=…；月初/月末=…），不在每次抓取时改写，避免刷新闪现不同描述
     if(active === 'today') recalc();
@@ -567,7 +565,6 @@ document.addEventListener('keydown', e => {
   }
   // 双向换算：以最后输入的框为源，反推另一框
   function recalc(){
-    rateVal.textContent = rate().toFixed(4);
     const r = rate();
     if(lastEdited === 'rmb'){
       const v = numOf(rmbIn);
@@ -654,9 +651,8 @@ document.addEventListener('keydown', e => {
   });
   // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保刷新锚点生效
   // 今日/月初/月末为独立取值，仅勾选无输入框；汇率值由 rateVals 提供（autoRate 每次打开页面按业务规则刷新）
-  rateVal.textContent = RATE_CFG.today.toFixed(4);
   showFxVals();
-  srcEl.innerHTML = '汇率来源（最终来源均为央行汇率）：今日 / 月初 / 月末 均取自「<b>'+esc(RATE_CFG.src)+'</b>」。';
+  srcEl.innerHTML = '汇率来源：今日 / 月初 / 月末 均取自「<b>'+esc(RATE_CFG.src)+'</b>」。';
   applySrc(); syncMainX(); recalc();
   // 每次打开/登录网页界面自动刷新（无自动化任务）：今日抓实时源；月初/月末按业务规则抓历史汇率源
   if(RATE_CFG.autoUpdate){
