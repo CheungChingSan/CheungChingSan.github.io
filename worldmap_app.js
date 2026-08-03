@@ -23,6 +23,7 @@ window.addEventListener("error", function(e){
   "Chad":["乍得","非洲","Africa/Ndjamena","td"],
   "Haiti":["海地","北美洲","America/Port-au-Prince","ht"],
   "Dominican Rep.":["多米尼加","北美洲","America/Santo_Domingo","do"],
+  "Dominica":["多米尼克","北美洲","America/Dominica","dm"],
   "Russia":["俄罗斯","欧洲","Europe/Moscow","ru"],
   "Bahamas":["巴哈马","北美洲","America/Nassau","bs"],
   "Falkland Is.":["福克兰群岛","南美洲","Atlantic/Stanley","fk"],
@@ -30,6 +31,8 @@ window.addEventListener("error", function(e){
   "Greenland":["格陵兰","北美洲","America/Nuuk","gl"],
   "Fr. S. Antarctic Lands":["法属南方领地","南极洲","Indian/Kerguelen","tf"],
   "Timor-Leste":["东帝汶","亚洲","Asia/Dili","tl"],
+  "Bahrain":["巴林","亚洲","Asia/Bahrain","bh"],
+  "Singapore":["新加坡","亚洲","Asia/Singapore","sg"],
   "South Africa":["南非","非洲","Africa/Johannesburg","za"],
   "Lesotho":["莱索托","非洲","Africa/Maseru","ls"],
   "Mexico":["墨西哥","北美洲","America/Mexico_City","mx"],
@@ -145,7 +148,6 @@ window.addEventListener("error", function(e){
   "Australia":["澳大利亚","大洋洲","Australia/Sydney","au"],
   "Sri Lanka":["斯里兰卡","亚洲","Asia/Colombo","lk"],
   "China":["中国","亚洲","Asia/Shanghai","cn"],
-  "Taiwan":["中国台湾","亚洲","Asia/Taipei","tw"],
   "Italy":["意大利","欧洲","Europe/Rome","it"],
   "Denmark":["丹麦","欧洲","Europe/Copenhagen","dk"],
   "United Kingdom":["英国","欧洲","Europe/London","gb"],
@@ -191,10 +193,10 @@ window.addEventListener("error", function(e){
   // 各国国际区号（ITU-T E.164，key=iso2），用于检索栏显示 “中文(+区号)” 并支持按区号反查国家
   const DIAL = {
     ae:971, af:93, al:355, am:374, ao:244, aq:672, ar:54, at:43, au:61, az:994,
-    ba:387, bd:880, be:32, bf:226, bg:359, bi:257, bj:229, bn:673, bo:591, br:55,
+    ba:387, bd:880, be:32, bf:226, bg:359, bi:257, bh:973, bj:229, bn:673, bo:591, br:55,
     bs:1242, bt:975, bw:267, by:375, bz:501, ca:1, cd:243, cf:236, cg:242, ch:41,
     ci:225, cl:56, cm:237, cn:86, co:57, cr:506, cu:53, cy:357, cz:420, de:49,
-    dj:253, dk:45, do:1809, dz:213, ec:593, ee:372, eg:20, eh:212, er:291, es:34,
+    dj:253, dk:45, dm:1767, do:1809, dz:213, ec:593, ee:372, eg:20, eh:212, er:291, es:34,
     et:251, fi:358, fj:679, fk:500, fr:33, ga:241, gb:44, ge:995, gh:233, gl:299,
     gm:220, gn:224, gq:240, gr:30, gt:502, gw:245, gy:592, hn:504, hr:385, ht:509,
     hu:36, id:62, ie:353, il:972, in:91, iq:964, ir:98, is:354, it:39, jm:1876,
@@ -204,13 +206,221 @@ window.addEventListener("error", function(e){
     mz:258, na:264, nc:687, ne:227, ng:234, ni:505, nl:31, no:47, np:977, nz:64,
     om:968, pa:507, pe:51, pg:675, ph:63, pk:92, pl:48, pr:1, ps:970, pt:351,
     py:595, qa:974, ro:40, rs:381, ru:7, rw:250, sa:966, sb:677, sd:249, se:46,
-    si:386, sk:421, sl:232, sn:221, so:252, sr:597, ss:211, sv:503, sy:963, sz:268,
+    si:386, sk:421, sl:232, sn:221, sg:65, so:252, sr:597, ss:211, sv:503, sy:963, sz:268,
     td:235, tf:262, tg:228, th:66, tj:992, tl:670, tm:993, tn:216, tr:90, tt:1868,
     tw:886, tz:255, ua:380, ug:256, us:1, uy:598, uz:998, ve:58, vn:84, vu:678,
     xk:383, ye:967, za:27, zm:260, zw:263
   };
+  // 全量国家拼音表（iso2 -> 全拼/常用别名，小写无空格），覆盖 COUNTRY 全部 175 国，用于拼音检索（如 meiguo→美国 / moxige→墨西哥）。
+  // 拼音数据源（按中国人的标注与习惯，纯中文名直拼；每国仅一个标准拼音，不收录别名/标准注音变体）
+  // 例：哥斯达黎加=gesidalijia、美国=meiguo、印度=yindu、印度尼西亚=yinniduiya、厄瓜多尔=eguaduoer
+  const PINYIN = {
+    ae:'alabolianheqiuzhangguo alianqiu',
+    af:'afuhan',
+    al:'aerbaniya',
+    am:'yameiniya',
+    ao:'anguola',
+    aq:'nanjizhou',
+    ar:'agenting',
+    at:'aodili',
+    au:'aodaliya',
+    az:'azhaibaijiang',
+    ba:'bosiniyaheheisaigeweiya',
+    bd:'mengjialaguo',
+    be:'bilishi',
+    bf:'bujinafaso',
+    bg:'baolijiya',
+    bh:'balin',
+    bi:'bujidi',
+    bj:'benin',
+    bn:'wenlai',
+    bo:'boliya',
+    br:'baxi',
+    bs:'bahama',
+    bt:'butan',
+    bw:'bociwana',
+    by:'baieluosi',
+    bz:'bolizi',
+    ca:'jianada',
+    cd:'gangguojin',
+    cf:'zhongfeigongheguo',
+    cg:'gangguobu',
+    ch:'ruishi',
+    ci:'ketediewa',
+    cl:'zhili',
+    cm:'kameilong',
+    cn:'zhongguo',
+    co:'gelunbiya',
+    cr:'gesidalijia',
+    cu:'guba',
+    cy:'saipulusi',
+    cz:'jieke',
+    de:'deguo',
+    dj:'jibuti',
+    dk:'danmai',
+    dm:'duominike',
+    do:'duominijia',
+    dz:'alijiliya',
+    ec:'eguaduoer',
+    ee:'aishaniya',
+    eg:'aiji',
+    eh:'xisahala',
+    er:'ejiaotiya',
+    es:'xibanya',
+    et:'aisesaibiya',
+    fi:'fenlan',
+    fj:'feiji',
+    fk:'fukelanqundao',
+    fr:'faguo',
+    ga:'jiapeng',
+    gb:'yingguo',
+    ge:'gelujiya',
+    gh:'jianna',
+    gl:'gelinglan',
+    gm:'gambiya',
+    gn:'jiniya',
+    gq:'chidaojineiya',
+    gr:'xila',
+    gt:'weidimala',
+    gw:'jiniyabishao',
+    gy:'guiyana',
+    hn:'hongdulasi',
+    hr:'keluodiya',
+    ht:'haidi',
+    hu:'xiongyali',
+    id:'yinniduiya yindunixiya yinni',
+    ie:'aierlan',
+    il:'yiselie',
+    in:'yindu',
+    iq:'yilake',
+    ir:'yilang',
+    is:'bingdao',
+    it:'yidali',
+    jm:'jiamaica',
+    jo:'yuehan',
+    jp:'riben',
+    ke:'jianniya',
+    kg:'jierjisi',
+    kh:'jianpuzhai',
+    kp:'chaoxian',
+    kr:'hanguo',
+    kw:'keweite',
+    kz:'hasakesitan',
+    la:'laowo',
+    lb:'lubannen',
+    lk:'sililanka',
+    lr:'libiliya',
+    ls:'laisuotuo',
+    lt:'libiaowan',
+    lu:'lusenbao',
+    lv:'latuiya',
+    ly:'libiya',
+    ma:'moluoge',
+    md:'moldowa',
+    me:'heishan',
+    mg:'madajiasijia',
+    mk:'maiqidong',
+    ml:'mali',
+    mm:'miandian',
+    mn:'waibizu',
+    mr:'maolitaniya',
+    mw:'malawi',
+    mx:'moxige',
+    my:'malaixiya',
+    mz:'monzanbike',
+    na:'namibiya',
+    nc:'xinakaleduoniya',
+    ne:'nirier',
+    ng:'niriliya',
+    ni:'nijialagua',
+    nl:'helan',
+    no:'nuowei',
+    np:'niboer',
+    nz:'xinxilan',
+    om:'aman',
+    pa:'banna',
+    pe:'bilu',
+    pg:'babuyaxinji',
+    ph:'feilübin',
+    pk:'bajisitan',
+    pl:'bolan',
+    pr:'boduolige',
+    ps:'basitan',
+    pt:'putaoya',
+    py:'balagui',
+    qa:'kataer',
+    ro:'luomaniya',
+    rs:'saierweiya',
+    ru:'eluosi',
+    rw:'luwangda',
+    sa:'shutealabo',
+    sb:'suoluomenqundao',
+    sd:'sudan',
+    se:'ruidian',
+    sg:'xinjiapo',
+    si:'siluowenniya',
+    sk:'siluofake',
+    sl:'sailaliong',
+    sn:'senneijiaer',
+    so:'suomaliya',
+    sr:'suilinan',
+    ss:'nansudan',
+    sv:'salvador',
+    sy:'xuliya',
+    sz:'siweishilan',
+    td:'zhade',
+    tf:'fashunfangliedi',
+    tg:'duogeyu',
+    th:'taiguo',
+    tj:'tajikesitan',
+    tl:'dongdiwen',
+    tm:'tukumensitan',
+    tn:'tunisiya',
+    tr:'tuerqi',
+    tt:'teliniwenghebaduo',
+    tz:'tansangniya',
+    ua:'wukelan',
+    ug:'wuganda',
+    us:'meiguo',
+    uy:'wuliguai',
+    uz:'wuzibieke',
+    ve:'weineiruila',
+    vn:'yuenan',
+    vu:'wanuatu',
+    xk:'kesuowo',
+    ye:'yemen',
+    za:'nanfei',
+    zm:'zhanbiya',
+    zw:'xinbawei'
+  };
+  // 中文别名（口语/缩写），仅收录"该国正式中文名的前缀性缩写"或"公认口语词"，
+  // 以免前缀匹配误伤他国。例：印尼→印度尼西亚、英→英国。
+  const CN_ALIAS = {
+    id:'印尼', cn:'中国', us:'美国 美', gb:'英国 英', fr:'法国 法', de:'德国 德',
+    jp:'日本 日', ru:'俄罗斯 俄', kr:'韩国 韩', kp:'朝鲜 朝', in:'印度 印',
+    ca:'加拿大', au:'澳大利亚 澳洲', br:'巴西', it:'意大利', es:'西班牙',
+    pt:'葡萄牙', nl:'荷兰', be:'比利时', ch:'瑞士', at:'奥地利',
+    se:'瑞典', no:'挪威', dk:'丹麦', fi:'芬兰', pl:'波兰', cz:'捷克',
+    ie:'爱尔兰', is:'冰岛', gr:'希腊', tr:'土耳其', eg:'埃及', za:'南非',
+    mx:'墨西哥', ar:'阿根廷', cl:'智利', co:'哥伦比亚', pe:'秘鲁', ve:'委内瑞拉',
+    cu:'古巴', do:'多米尼加', dm:'多米尼克', ec:'厄瓜多尔', uy:'乌拉圭', bo:'玻利维亚', py:'巴拉圭',
+    gt:'危地马拉', hn:'洪都拉斯', ni:'尼加拉瓜', cr:'哥斯达黎加', pa:'巴拿马', sv:'萨尔瓦多',
+    th:'泰国', vn:'越南', ph:'菲律宾 菲', my:'马来西亚', sg:'新加坡',
+    mm:'缅甸', la:'老挝', kh:'柬埔寨', mn:'蒙古', np:'尼泊尔', bt:'不丹', lk:'斯里兰卡',
+    bd:'孟加拉国', pk:'巴基斯坦', af:'阿富汗', ir:'伊朗', iq:'伊拉克', sy:'叙利亚',
+    jo:'约旦', lb:'黎巴嫩', il:'以色列', sa:'沙特阿拉伯 沙特', ae:'阿联酋 阿酋', qa:'卡塔尔',
+    kw:'科威特', om:'阿曼', ye:'也门',
+    ng:'尼日利亚', ke:'肯尼亚', et:'埃塞俄比亚', tz:'坦桑尼亚',
+    ug:'乌干达', gh:'加纳', sn:'塞内加尔', ci:'科特迪瓦', cm:'喀麦隆', zm:'赞比亚', zw:'津巴布韦'
+  };
+  function pinyinOf(code){ return PINYIN[code] || ''; }
+
   let ALL_CUSTOMERS = [];
   let panelWired = false;
+  let _searchEmboss = null;   // 由 initWorld 内 searchEmboss 赋值，供搜索 IIFE（平行作用域）跨域调用
+  let _embossView = null;     // 浮雕前的 zoom transform 快照，清空搜索时还原视图
+  // 跨域桥接：搜索 IIFE 在 initWorld 之外（模块作用域），需通过模块级变量访问内部 svg/zoom/hideEmboss
+  let _svg = null, _zoom = null, _hideEmboss = null;
 
   function initWorld(){
   const tip = document.getElementById('tip');
@@ -232,12 +442,12 @@ window.addEventListener("error", function(e){
 
   function infoOf(d){
     const name = d.properties && d.properties.name;
+    // 台湾是中国不可分割的一部分：地图上台湾地区作为中国领土展示，归属中国（不单独作为国家检索）
+    if (name === 'Taiwan') return ['中国台湾', '亚洲', 'Asia/Shanghai', 'cn'];
     return COUNTRY[name] || [name||'未知地区', '—', null, null];
   }
-  // 台湾是中国不可分割的一部分：中国大陆与台湾在悬停/选中时联动高亮
+  // 联动高亮（台湾已不作为独立国家检索，故仅保留中国自身）
   function partnerIso2(iso2){
-    if (iso2 === 'cn') return ['tw'];
-    if (iso2 === 'tw') return ['cn'];
     return [];
   }
 
@@ -248,11 +458,24 @@ window.addEventListener("error", function(e){
   const svg = d3.select('#globe').append('svg')
     .attr('preserveAspectRatio','xMidYMid meet');
 
-  // 固定层：地球轮廓（海洋底 + 边界描边光晕），不随拖拽/缩放移动
+  // 固定层：地球轮廓（边界描边光晕），不随拖拽/缩放移动；海洋底改为内容层平铺（见 oceanTiles）
   const defs = svg.append('defs');
   const clip = defs.append('clipPath').attr('id','globeClip');
   const clipSphere = clip.append('path');                 // 仅用几何裁切内容
-  const oceanSphere = svg.append('path').attr('class','sphere-ocean');   // 海洋底（内容之下）
+  // 3D 浮雕：地面投影滤镜——仅对「独立阴影形状」做柔和偏移模糊，不再对国形本身投自带阴影
+  // （feDropShadow 会同时渲染源图 + 偏移副本，是重影根因；改为专用阴影层可彻底消除重影）
+  const embossShadow = defs.append('filter').attr('id','embossShadow')
+    .attr('x','-60%').attr('y','-60%').attr('width','220%').attr('height','220%');
+  embossShadow.append('feGaussianBlur').attr('in','SourceAlpha').attr('stdDeviation', 4).attr('result','b');
+  embossShadow.append('feOffset').attr('in','b').attr('dx', 0).attr('dy', 6).attr('result','o');
+  const ec = embossShadow.append('feComponentTransfer').attr('in','o');
+  ec.append('feFuncA').attr('type','linear').attr('slope', 0.5);
+  embossShadow.append('feMerge').append('feMergeNode').attr('in','o');
+  // 顶面高光渐变：上亮下略暗，制造"被光照射的顶面"立体感
+  const embossTopGrad = defs.append('linearGradient').attr('id','embossTopGrad')
+    .attr('x1','0').attr('y1','0').attr('x2','0').attr('y2','1');
+  embossTopGrad.append('stop').attr('offset','0%').attr('stop-color','#7dd3fc');
+  embossTopGrad.append('stop').attr('offset','100%').attr('stop-color','#38bdf8');
   const gClip = svg.append('g').attr('clip-path','url(#globeClip)');     // 固定裁切窗口
   const gZoom = gClip.append('g');                                     // 内容层（受 zoom transform）
   const frameSphere = svg.append('path').attr('class','sphere-frame'); // 边界描边（内容之上，固定）
@@ -266,6 +489,9 @@ window.addEventListener("error", function(e){
   for (let i = 0; i < TILES; i++){
     tiles.push(gZoom.append('g').attr('class','tile'));
   }
+  // 海洋底随内容层平铺（与陆地同步平移 + 水平无缝循环），
+  // 修复「拖拽时固定海洋底不跟随 → 海洋区移出固定海洋底范围 → 露出底色 = 画面丢失」
+  const oceanTiles = tiles.map(tg => tg.insert('path', ':first-child').attr('class', 'ocean-tile'));
   tiles.forEach(tg => {
     tg.selectAll('path.country').data(features).enter()
       .append('path').attr('class','country')
@@ -273,9 +499,57 @@ window.addEventListener("error", function(e){
       .on('mouseleave', onLeave)
       .on('click', onClick);
   });
-  // 地球内参考线（网格）：挂在 gZoom 内、tiles 之上，随拖拽/缩放一起平移缩放
-  const gGrid = gZoom.append('g').attr('class','graticule');
+  // 经纬度网格（graticule）：1:1 复刻专业世界地图（National Geographic / Google 风格）的经纬网。
+  // 设计要点（解决"线太差 + 拖拽消失"）：
+  //  1) 用 d3.geoGraticule 生成真实地理弧线（高纬纬线为自然弯曲，非直线段），每 30° 一格，
+  //     关键纬线细化：赤道 / 南北回归线 ±23.5° / 南北极圈 ±66.5°。
+  //  2) 网格挂在【内容层 gZoom 内】，且【每个 tile 都铺一份】——拖拽时随 gZoom 平移、3 份平铺保证
+  //     水平无缝循环，经线/纬线永不"断开消失"；globeClip 正向遮罩保证线只在地球轮廓内显示（不溢到 UI）。
+  //  3) 粗细分级：赤道/本初子午线最粗、回归线/极圈中粗、其余细，复刻专业地图观感。
+  const gGrids = tiles.map(tg => tg.append('g').attr('class','graticule graticule-in'));
   const allPaths = gZoom.selectAll('path.country');
+
+  // 微国放大浮雕参数（2026-07-24 修正：弃用圆点兜底，改为放大真实轮廓浮雕）
+  // 用户明确要求：不要圆点、要真实轮廓 + 放大浮雕突出。
+  // 新加坡/巴林等 110m 几何本身仅 ~1px，悬停/搜索时用【放大版真实 path】做 3D 浮雕，
+  // 既不丢真实形状又能"撑大"引起注意；底图始终画真实 path（描边加粗保证可见，不再渲染圆点）。
+  const EMBOSS_MICRO_SCALE = 5.0;   // 微国浮雕放大倍数（相对原始轮廓，须 > 底图 MICRO_LIFT 才能探出）
+  const MICRO_LIFT = 4.0;           // 微国底图轮廓放大倍数（绕质心，使其在世界地图即可见，不依赖 hover）
+  const MICRO_BOX = 5;               // 投影后屏幕包围盒阈值（px），仅用于判断"是否微国"
+  function iso2Of(d){ const v = COUNTRY[(d.properties && d.properties.name)]; return v && v[3]; }
+  function screenBox(d){
+    try { const b = path.bounds(d); return Math.max(b[1][0]-b[0][0], b[1][1]-b[0][1]); }
+    catch(e){ return 999; }
+  }
+  function isMicro(d){ return screenBox(d) < MICRO_BOX; }
+  // 仅用于浮雕放大判断：投影相关，resize 时重算
+  let MICRO_SET = new Set();
+  function recomputeMicro(){
+    MICRO_SET = new Set();
+    features.forEach(f => { if (isMicro(f)) MICRO_SET.add(f); });
+  }
+
+  // 3D 浮雕突出层：悬停国家「从平面探出」的克隆（置于内容层最上，随拖拽/缩放同步；不设 pointer-events，不拦截交互）
+  const gEmboss = gZoom.append('g').attr('class', 'emboss-layer');
+  // 客户绿色像素点顶层图层：置于 gEmboss 之上，确保 3D 浮雕显示时客户原点位置始终可见（不被浮雕覆盖）
+  const gCust = gZoom.append('g').attr('class', 'cust-layer');
+  // 名称 / iso2 ↔ feature 查表（用于联动高亮 + 浮雕克隆定位）
+  const nameToFeature = {};
+  const iso2ToFeature = {};
+  features.forEach(f => {
+    const nm = f.properties && f.properties.name;
+    if (nm) nameToFeature[nm] = f;
+    const v = COUNTRY[nm];
+    if (v && v[3]) iso2ToFeature[v[3]] = f;
+  });
+  // 一个中国原则：台湾是中国不可分割的一部分。地图上台湾地区作为独立 feature 存在（name='Taiwan'），
+  // 但归属中国（iso2=cn）。检索/高亮中国时，台湾 feature 必须一并浮雕 + 高亮，绝不可遗漏。
+  const TAIWAN_FEATURE = nameToFeature['Taiwan'] || null;
+  // 给定一个 iso2，返回需要一并浮雕/高亮的"附庸 feature"列表（目前仅 cn→台湾）
+  function partnerFeatures(iso2){
+    if (iso2 === 'cn' && TAIWAN_FEATURE) return [TAIWAN_FEATURE];
+    return [];
+  }
 
   // 已开通板块国家（持续金色高亮，便于快速定位）：孟加拉 bd + 6 新国
   const HIGHLIGHT = ['bd','ng','ci','tz','gt','mx','ve'];
@@ -297,11 +571,24 @@ window.addEventListener("error", function(e){
     // 地球轻微缩小：上/左/下/右各留白，给经纬度标注让出空间（上方让更多，避开侧边面板/顶栏）
     projection.fitExtent([[GM.l, GM.t],[w - GM.r, h - GM.b]], {type:'Sphere'});
     const dSphere = path({type:'Sphere'});
-    oceanSphere.attr('d', dSphere);
+    oceanTiles.forEach(s => s.attr('d', dSphere));
     frameSphere.attr('d', dSphere);
     clipSphere.attr('d', dSphere);
     TILE = (w - GM.l - GM.r);              // 平铺周期 = 世界内容宽（含两侧留白）
-    allPaths.attr('d', path);
+    recomputeMicro();                      // 投影变了，重算微国集合（仅用于浮雕放大判断）
+    allPaths.each(function(d){
+      const isM = MICRO_SET.has(d);
+      const sel = d3.select(this);
+      sel.attr('d', path(d)).classed('micro', isM);
+      // 微国绕质心放大真实轮廓：世界地图按真实比例仅~1px 不可见，放大使其在底图即可见；
+      // 与 hover 浮雕共用同一质心(c)，自然对齐（浮雕放大 EMBOSS_MICRO_SCALE>MICRO_LIFT 故探出）
+      if (isM){
+        const c = path.centroid(d);
+        sel.attr('transform', `translate(${c[0]},${c[1]}) scale(${MICRO_LIFT}) translate(${-c[0]},${-c[1]})`);
+      } else {
+        sel.attr('transform', null);
+      }
+    });
     tiles.forEach((tg, i) => tg.attr('transform', `translate(${i * TILE},0)`));
     if (NG_PTS.length) drawNigeriaPoints();
     drawGraticule();
@@ -309,40 +596,42 @@ window.addEventListener("error", function(e){
     updateRuler();
   }
 
-  // —— 地球内参考线（随缩放拖拽，gZoom 内）——
-  // 粗细分级：经线(mer)细；纬线分三档——赤道(par-eq)最粗、回归线/极圈(par-mid)中粗、其余细。
+  // —— 经纬网（1:1 复刻国际品牌世界地图 NatGeo / Google / 教科书挂图的经纬网刻画）——
+  // 全部【实线】（用户要求），但按地理重要性建立清晰层级（非全等粗细）：
+  //   · 赤道 / 本初子午线  → 最粗主轴实线（亮，0.9px@基准、随缩放）
+  //   · 南北回归线 ±23.5° / 南北极圈 ±66.5° → 中粗实线
+  //   · 其余 30° 间隔经线 / 纬线 → 细实线但低透明度（建立层级、不抢主干）
+  // 用 d3.geoGraticule 生成真实地理弧线（高纬纬线自然弯曲），每 30° 一格。
   function drawGraticule(){
-    const meridians = d3.range(-180, 181, 30);   // -180,-150,...,180
-    gGrid.selectAll('path.mer').remove();
-    gGrid.selectAll('path.mer').data(meridians).enter().append('path')
-      .attr('class', 'mer')
-      .attr('d', lon => {
-        const pts = d3.range(-90, 91, 3).map(lat => projection([lon, lat]));
-        return 'M' + pts.map(p => p ? (p[0].toFixed(1) + ',' + p[1].toFixed(1)) : null).filter(Boolean).join('L');
-      });
+    const gp = d3.geoPath(projection);
+    // 关键纬线集合（用于粗细分级）
+    const keyLats = { 0:'par-eq', 23.5:'par-mid', '-23.5':'par-mid', 66.5:'par-mid', '-66.5':'par-mid' };
+    const keyLons = { 0:'mer-eq' };   // 本初子午线加粗
+    // 纬线（标准 30° 间隔，并细化关键纬线）
+    const lats = d3.range(-60, 61, 30).concat([23.5, -23.5, 66.5, -66.5, 0]);
+    // 经线（标准 30° 间隔，含 0/±180）
+    const lons = d3.range(-180, 181, 30);
 
-    // 纬线分档：赤道最粗、南北回归线+南北极圈中粗、其余细（本图仅画关键纬线，均中粗以上）
-    const parallels = [
-      { lat: 0,     cls: 'par-eq'  },   // 赤道：最粗主轴
-      { lat: 23.5,  cls: 'par-mid' },   // 北回归线：中粗
-      { lat: -23.5, cls: 'par-mid' },   // 南回归线：中粗
-      { lat: 66.5,  cls: 'par-mid' },   // 北极圈：中粗
-      { lat: -66.5, cls: 'par-mid' }    // 南极圈：中粗
-    ];
-    gGrid.selectAll('path.par').remove();
-    gGrid.selectAll('path.par').data(parallels).enter().append('path')
-      .attr('class', d => 'par ' + d.cls)
-      .attr('d', d => {
-        const a = projection([0, d.lat]), b = projection([180, d.lat]);
-        if (!a || !b) return '';
-        return 'M' + a[0].toFixed(1) + ',' + a[1].toFixed(1) + 'L' + b[0].toFixed(1) + ',' + b[1].toFixed(1);
+    // 每个 tile 都铺一份网格（3 份平铺），拖拽时随 gZoom 平移、水平无缝循环，线永不消失
+    gGrids.forEach(g => {
+      g.selectAll('path.par').remove();
+      g.selectAll('path.mer').remove();
+      lats.forEach(lat => {
+        const geo = { type:'LineString', coordinates: d3.range(-180, 181, 2).map(lon => [lon, lat]) };
+        g.append('path').attr('class', 'par ' + (keyLats[String(lat)] || 'par-thin')).attr('d', gp(geo));
       });
+      lons.forEach(lon => {
+        const geo = { type:'LineString', coordinates: d3.range(-85, 86, 2).map(lat => [lon, lat]) };
+        g.append('path').attr('class', 'mer ' + (keyLons[String(lon)] || 'mer-thin')).attr('d', gp(geo));
+      });
+    });
   }
 
   // —— 经纬度仪表尺（固定层 gRuler，地球轮廓外，不被裁切遮挡）——
   // 横尺贴地球框上缘外、竖尺贴地球框左缘外；刻度数值随 zoom.transform 实时重算（见 updateRuler）。
   // 记录当前 transform，供 ruler 随拖拽滚动。
   let _curTransform = d3.zoomIdentity;
+  let _rulerScheduled = false;   // updateRuler 用 rAF 合并：拖拽/缩放一帧内多次 zoom 事件只重算一次经纬度尺
   function drawRulerBase(){
     // 仅画尺子轨道（横/竖基线 + 极地 N/S 角标），刻度数字在 updateRuler 里按需生成
     const w = width(), h = height();
@@ -364,30 +653,20 @@ window.addEventListener("error", function(e){
     const boxL = GM.l, boxR = w - GM.r, boxT = GM.t, boxB = h - GM.b;
     const t = _curTransform;
     const k = t.k;
-    // 横尺：屏幕 x → 内容坐标 → 反投影求经度。地球内容宽度 TILE，经度范围随 tx 平移。
-    // 用 projection 反解：对每列屏幕 x，取内容坐标 cx = (x - t.x)/k，再反投影 [cx, 赤道y] 求经度。
+    // 横尺：直接由投影驱动生成经度标签（保证 0° 标签精确落在本初子午线 mer-eq 上）。
+    // 遍历经度刻度值，用 projection([lon,0]) 算内容坐标，套当前 transform 得屏幕 x，
+    // 仅保留落在地球横尺可见范围内的标签。这样 0° 标签 x == mer-eq 赤道点 x，严格对齐。
     const eqY = projection([0, 0])[1];
-    // 选刻度步长：k 越大刻度越密
     const lonTick = k <= 1.2 ? 30 : (k <= 2.5 ? 15 : (k <= 4 ? 10 : 5));
     const lonSet = [];
-    // 扫描屏幕横尺范围，按内容坐标步长生成刻度
-    for (let x = boxL; x <= boxR; x += 4){
-      const cx = (x - t.x) / k;
-      // 反投影求经度：NaturalEarth1 经度与 x 近似线性（在赤道），用 projection.invert
-      const inv = projection.invert([cx, eqY]);
-      if (!inv) continue;
-      let lon = inv[0];
-      // 归一化到 [-180,180]
-      lon = ((lon + 180) % 360 + 360) % 360 - 180;
-      const rounded = Math.round(lon / lonTick) * lonTick;
-      if (rounded < -180) continue;
-      if (rounded > 180) continue;
-      // 去重（屏幕相邻同刻度）
-      if (!lonSet.length || Math.abs(lonSet[lonSet.length-1].lon - rounded) >= lonTick * 0.9){
-        lonSet.push({ lon: rounded, x });
-      }
+    for (let lon = -180; lon <= 180; lon += lonTick){
+      const p = projection([lon, 0]);           // 赤道处该经度的内容坐标
+      if (!p) continue;
+      const x = p[0] * k + t.x;                  // 套 zoom transform 得屏幕 x
+      if (x < boxL - 2 || x > boxR + 2) continue; // 超出地球横尺不画
+      lonSet.push({ lon, x });
     }
-    const lonSel = gRuler.selectAll('text.ruler-lon').data(lonSet, d => d.lon + '@' + Math.round(d.x));
+    const lonSel = gRuler.selectAll('text.ruler-lon').data(lonSet, d => d.lon);
     lonSel.exit().remove();
     lonSel.enter().append('text').attr('class','ruler-lon')
       .merge(lonSel)
@@ -395,21 +674,23 @@ window.addEventListener("error", function(e){
       .attr('text-anchor','middle')
       .text(d => fmtLon(d.lon));
 
-    // 竖尺：屏幕 y → 内容坐标 → 反投影求纬度
-    const lon0x = projection([0, 0])[0];
+    // 竖尺（左侧纬度标注）：必须对齐【地球左边框处真实的纬线弧线】——
+    // 旧版固定用本初子午线(lon=0)反投影求纬度 y，但 NaturalEarth1 下纬线在各经度 y 不同，
+    // 地球左边框对应经度≠0，导致标注 y 与左边框实际纬线错位、看起来不平行。
+    // 修复：先求左边框当前对应经度 lonLeft（用框中点的内容坐标反投影），
+    // 再直接取 projection([lonLeft, lat]) 的内容 y，套当前 transform 得屏幕 y → 标注精确落在左边框纬线上。
+    const leftContentX = (boxL - t.x) / k;                 // 左边框对应的内容坐标 x
+    const invLeft = projection.invert([leftContentX, eqY]);
+    const lonLeft = invLeft ? invLeft[0] : 0;
     const latTick = k <= 1.2 ? 30 : (k <= 2.5 ? 15 : (k <= 4 ? 10 : 5));
     const latSet = [];
-    for (let y = boxT; y <= boxB; y += 4){
-      const cy = (y - t.y) / k;
-      const inv = projection.invert([lon0x, cy]);
-      if (!inv) continue;
-      let lat = inv[1];
-      if (lat < -90 || lat > 90) continue;
-      const rounded = Math.round(lat / latTick) * latTick;
-      if (rounded < -85 || rounded > 85) continue;
-      if (!latSet.length || Math.abs(latSet[latSet.length-1].lat - rounded) >= latTick * 0.9){
-        latSet.push({ lat: rounded, y });
-      }
+    for (let lat = -60; lat <= 60; lat += latTick){
+      // 直接算左边框处该纬线的屏幕 y（内容坐标 -> 屏幕坐标），精确对齐弧线
+      const p = projection([lonLeft, lat]);
+      if (!p) continue;
+      const sy = p[1] * k + t.y;
+      if (sy < boxT - 4 || sy > boxB + 4) continue;        // 超出地球框不画
+      latSet.push({ lat, y: sy });
     }
     const latSel = gRuler.selectAll('text.ruler-lat').data(latSet, d => d.lat + '@' + Math.round(d.y));
     latSel.exit().remove();
@@ -453,12 +734,20 @@ window.addEventListener("error", function(e){
         if (TILE > 0) tx = ((tx % TILE) + TILE) % TILE - TILE;   // tx ∈ [-TILE, 0)
         return d3.zoomIdentity.translate(tx, 0).scale(1);          // 禁用垂直
       }
-      // 放大状态：水平 tx 不再取模（保持 d3 内部连续累积），保证“以光标为中心缩放”
-      // 精确成立——鼠标悬停的国家在放大/缩小全程停在原位，无漂移。垂直限幅防露白。
+      // 放大状态：水平 tx 不再取模（保持 d3 内部连续累积），保证“以光标为中心缩放”精确成立、
+      // 鼠标悬停国全程停在原位无漂移。但需对水平/垂直都做限幅，否则放大后朝单一方向拖拽会
+      // 拖出 3 份平铺世界 [0, 3*TILE]（横向）或地球 sphere 范围（纵向）→ 露出无内容空白区。
+      // 横向：可见 content 区间 [-tx/k, (w-tx)/k] 必须落在 [0, 3*TILE]
+      let tx = transform.x;
+      if (tx > 0) tx = 0;                       // 不能超过左缘
+      const txMin = w - 3 * TILE * k;           // 拖到最右时右缘不超出第 3 份 tile
+      if (tx < txMin) tx = txMin;
+      // 纵向：可见 content 区间 y [-ty/k, (h-ty)/k] 必须落在地球 sphere [GM.t, h-GM.b]
       let ty = transform.y;
-      if (ty > 0) ty = 0;
-      if (ty < h - h * k) ty = h - h * k;
-      return d3.zoomIdentity.translate(transform.x, ty).scale(k);
+      if (ty > -GM.t * k) ty = -GM.t * k;       // 顶不外移
+      const tyMin = h - (h - GM.b) * k;         // 底不外移
+      if (ty < tyMin) ty = tyMin;
+      return d3.zoomIdentity.translate(tx, ty).scale(k);
     })
     .on('zoom', (event) => {
       // 直接使用 d3 的 transform（k>1 为原始连续值，k<=1 已被 constrain 取模到 [-TILE,0)）。
@@ -466,7 +755,7 @@ window.addEventListener("error", function(e){
       gZoom.attr('transform', event.transform);
       // 经纬度仪表尺随拖拽/缩放实时变化（尺子在地球外、不被裁切，数值按 transform 重算滚动）
       _curTransform = event.transform;
-      updateRuler();
+      if (!_rulerScheduled){ _rulerScheduled = true; requestAnimationFrame(function(){ _rulerScheduled = false; updateRuler(); }); }
       // 拖拽/缩放手势内同步 LOL 手位置：d3 手势中 mousemove 不一定冒泡到 window，故用 sourceEvent 兜底
       if (event.sourceEvent && typeof event.sourceEvent.clientX === 'number' && _globeEl) {
         const r = _globeEl.getBoundingClientRect();
@@ -530,11 +819,23 @@ window.addEventListener("error", function(e){
   document.getElementById('zreset').addEventListener('click', resetView);
 
   // 交互回调
+  let _lastHoverKey = null, _tipW = 0, _tipH = 0;   // 仅悬停国家改变时重建浮雕 + 缓存 tooltip 尺寸，消除每像素 mousemove 卡顿
   function onMove(e, d){
     const [cn, cont, tz, iso2] = infoOf(d);
     // 联动高亮：悬停中国→台湾同亮，悬停台湾→中国同亮
-    const partner = partnerIso2(iso2);
-    allPaths.classed('active', p => { const v = COUNTRY[(p.properties&&p.properties.name)]; return v && partner.includes(v[3]); });
+    // partnerIso2 恒返回空(台湾已并入中国): 旧逻辑每 move 遍历 525 国清 active 纯属空转，已移除
+    // 3D 浮雕突出 + 清晰黄边高亮：悬停国 + 联动国（cn/tw）一起探出
+    // (embossIso2 已弃用: 台湾并入中国，悬停仅单国浮雕)
+    // 关键：悬停国所在的 tile（3 份平铺中）有水平偏移 translate(i*TILE,0)，
+    // 浮雕克隆必须用同一偏移才能与可见国形对齐（否则拖拽后落在错误 tile → 看似"无浮雕"）
+    const tileX = tileOffsetOf(e.currentTarget);
+    // 浮雕锚定国家质心、与光标像素无关 → 仅悬停国家(含 tile)改变时重建(13+ 路径)，否则每像素重画=卡顿根因
+    const _hk = iso2 + '@' + tileX;
+    if (_hk !== _lastHoverKey){
+      _lastHoverKey = _hk;
+      showEmboss([iso2], tileX);
+      _tipW = tip.offsetWidth; _tipH = tip.offsetHeight;
+    }
     curTz = tz;
     tipCn.textContent = cn; tipEn.textContent = (d.properties&&d.properties.name)||'';
     tipCn2.textContent = cn;
@@ -542,20 +843,146 @@ window.addEventListener("error", function(e){
     tipCont.textContent = cont;
     tipTime.textContent = tz ? fmtTime(tz) : '—';
     tip.classList.add('show');
-    const pad = 16, tw = tip.offsetWidth, th = tip.offsetHeight;
+    const pad = 16, tw = (_tipW || tip.offsetWidth), th = (_tipH || tip.offsetHeight);
     let x = e.clientX + pad, y = e.clientY + pad;
     if (x + tw > window.innerWidth) x = e.clientX - tw - pad;
     if (y + th > window.innerHeight) y = e.clientY - th - pad;
     tip.style.left = x + 'px'; tip.style.top = y + 'px';
   }
-  function onLeave(){ tip.classList.remove('show'); curTz = null; allPaths.classed('active', false); }
+  function onLeave(){ tip.classList.remove('show'); _lastHoverKey = null; curTz = null; hideEmboss(); }
+  // —— 3D 浮雕突出：克隆悬停国（及其联动国）路径，围绕自身质心略微放大并投偏移阴影，
+  //    加清晰黄色边框（vector-effect 锁定 1:1 线宽，不模糊、不加粗边界）。克隆置于 gZoom 内，随拖拽/缩放同步。
+  // 取悬停 path 所属 tile 的水平偏移（content 坐标；gZoom 之上叠加，故与国形共享同一坐标系）
+  function tileOffsetOf(el){
+    let n = el;
+    while (n && n !== gZoom.node && !(n.getAttribute && (n.getAttribute('class')||'').split(/\s+/).indexOf('tile') >= 0)){
+      n = n.parentNode;
+    }
+    if (!n || n === gZoom.node) return 0;
+    const bv = n.transform && n.transform.baseVal && n.transform.baseVal.consolidate();
+    return bv ? bv.matrix.e : 0;   // matrix.e = translateX（content 单位）
+  }
+  // 颜色插值（侧壁由深到浅，制造体积厚度）
+  function lerp(a, b, t){ return Math.round(a + (b - a) * t); }
+  function wallColor(t){ // t:0=底面(暗) → 1=顶面(亮)
+    const r = lerp(8, 14, t), g = lerp(47, 116, t), b = lerp(73, 178, t);
+    return `rgb(${r},${g},${b})`;
+  }
+  // 客户绿点随悬停国家「浮雕」一起 3D 探出：仅抬升落在被悬停 tile 内、且位于该国家多边形内的点，
+  // 使其精准贴合浮雕顶面（content 坐标抬升 H、绕质心放大 1.04，与 emboss-top 同一变换，tile 偏移被 tile 组抵消）。
+  function dropCustomerPoints(){ if (gCust) gCust.selectAll('circle.cust-pt').attr('transform', null); }
+  function liftCustomerPoints(f, c, H, tileX){
+    if (!gCust) return;
+    const tx = Math.round(tileX || 0);
+    const tileG = gCust.selectAll('g.cust-tile').filter(function(){
+      const m = /translate\(([-\d.]+)/.exec(this.getAttribute('transform') || '');
+      return m && Math.round(parseFloat(m[1])) === tx;
+    });
+    tileG.selectAll('circle.cust-pt')
+      .filter(d => d && d.lng != null && d.lat != null && d3.geoContains(f, [+d.lng, +d.lat]))
+      .attr('transform', `translate(${c[0]},${c[1]-H}) scale(1.04) translate(${-c[0]},${-c[1]})`);
+  }
+  function showEmboss(iso2List, tileX){
+    gEmboss.selectAll('*').remove();
+    dropCustomerPoints();                 // 先落回平面，避免前一国残留抬升
+    const tx = tileX || 0;
+    const k = (_curTransform && _curTransform.k) ? _curTransform.k : 1;
+    const H = 9 / k;          // 浮雕高度（屏幕空间恒定 ~9px，随缩放反比，保持观感一致）
+    const LAYERS = 10;        // 侧壁层数（越多越平滑）
+    // 展开附庸 feature（一个中国：cn 含台湾），保证台湾随中国一并浮雕
+    // iso2 字符串 → feature 对象：showEmboss 内部统一以 feature 绘制。
+    // 修复回归：此前直接拿 iso2 字符串当 feature 用，被下方 typeof 检查全部 skip，
+    // 导致【除台湾(中国的 partner)外所有国家 hover/搜索浮雕失效】。
+    const fullList = [];
+    (iso2List || []).forEach(code => {
+      const codeStr = (code && typeof code === 'object') ? (iso2Of(code) || '') : code;
+      const f = (code && typeof code === 'object') ? code : (iso2ToFeature[code] || null);
+      if (f && !fullList.includes(f)) fullList.push(f);
+      partnerFeatures(codeStr).forEach(pf => { if (pf && !fullList.includes(pf)) fullList.push(pf); });
+    });
+    fullList.forEach(f => {
+      if (!f || typeof f !== 'object') return;
+      const isMicroF = MICRO_SET.has(f);
+      const d = path(f);                         // 始终用真实轮廓（不再圆点兜底）
+      if (!d) return;
+      const c = path.centroid(f);                 // 内容坐标质心
+      // 微国浮雕：放大自身真实轮廓，让"撑大"的 3D 隆起清晰可见；普通国维持原比例
+      const sBase = isMicroF ? EMBOSS_MICRO_SCALE : 1.03;   // 阴影/侧壁基准缩放
+      const sTop  = isMicroF ? (EMBOSS_MICRO_SCALE + 0.01) : 1.04;  // 顶面缩放
+      const base = `translate(${c[0] + tx},${c[1]}) scale(${sBase}) translate(${-c[0]},${-c[1]})`;
+      // 1) 地面投影：落在平面（base）上的柔和阴影，置于最底
+      gEmboss.append('path').attr('class','emboss-shadow')
+        .attr('d', d).attr('transform', base);
+      // 2) 侧壁（厚度）：从平面 base(y=0) 逐层抬升到顶面(y=-H)，越上越亮 → 整块区域"探出平面"的实体体积
+      for (let i = 0; i <= LAYERS; i++){
+        const t = i / LAYERS;            // 0=底 1=顶
+        const y = -H * t;
+        gEmboss.append('path').attr('class','emboss-side')
+          .attr('d', d)
+          .attr('transform', `translate(${c[0] + tx},${c[1] + y}) scale(${sBase}) translate(${-c[0]},${-c[1]})`)
+          .style('fill', wallColor(t))
+          .style('stroke', 'none');
+      }
+      // 3) 顶面：清晰黄边 + 高光渐变，最为"被光照射的隆起表面"，置于最上
+      gEmboss.append('path').attr('class','emboss-top')
+        .attr('d', d)
+        .attr('transform', `translate(${c[0] + tx},${c[1] - H}) scale(${sTop}) translate(${-c[0]},${-c[1]})`);
+      liftCustomerPoints(f, c, H, tx);    // 该国内客户绿点随浮雕一起探出
+    });
+  }
+  function hideEmboss(){ gEmboss.selectAll('*').remove(); dropCustomerPoints(); }
+  // 跨域桥接赋值（供外部搜索 IIFE 的 clearSearch 调用）
+  _svg = svg; _zoom = zoom; _hideEmboss = hideEmboss;
+  // 搜索栏精确匹配国家 → 自动识别并让该国 3D 浮雕显示（同时平移聚焦 + 弹 tooltip）
+  function searchEmboss(iso2){
+    const f = iso2ToFeature[iso2];
+    if (!f) return false;
+    // 世界平铺 3 份（TILES），需找到当前视野中"可见"的那一份的 translateX 偏移，
+    // 使浮雕克隆与可见国形对齐（否则拖拽后落在错误 tile → 看似无浮雕）
+    const c0 = path.centroid(f);            // 内容坐标质心
+    const base = projection.invert ? projection.invert(c0) : null;
+    let tx = 0;
+    if (base){
+      const cx = base[0];                    // 经度（-180~180）
+      // 当前 translate 后，可见经度 = cx + (translateX / TILE) * 360，取模到 [-180,180]
+      const shift = (_curTransform && _curTransform.x) ? _curTransform.x / TILE : 0;
+      let visLon = ((cx + shift * 360) % 360 + 360) % 360; if (visLon > 180) visLon -= 360;
+      // 可见国形所在的 tile 偏移 = 让其经度对齐到 visLon 的那一份
+      tx = -((visLon - cx) / 360) * TILE;
+      // 归一化到 [-TILE, TILE) 的整数倍，取最接近 0 的一份
+      tx = Math.round(tx / TILE) * TILE;
+    }
+    showEmboss([iso2], tx);
+    // 记录浮雕前的视图状态（仅首次浮雕时快照，连续搜索不覆盖，保证清空回到最初视图）
+    if (_curTransform && !_embossView) _embossView = _curTransform;
+    // 平移聚焦：把该国质心移到视野中心并适度放大
+    const k = Math.max((_curTransform && _curTransform.k) || 1, 2.2);
+    const W = width(), H = height();
+    const target = d3.zoomIdentity
+      .translate(W / 2 - c0[0] * k, H / 2 - c0[1] * k)
+      .scale(k);
+    svg.transition().duration(500).call(zoom.transform, target);
+    // 弹 tooltip 显示国名：定位在该国轮廓「正下方」，避免遮挡小国中心（如厄瓜多尔）
+    const [cn, cont, tz, _] = infoOf(f);
+    tipCn.textContent = cn; tipEn.textContent = (f.properties && f.properties.name) || '';
+    tipCn2.textContent = cn; tipEn2.textContent = (f.properties && f.properties.name) || '';
+    tipCont.textContent = cont; tipTime.textContent = tz ? fmtTime(tz) : '—';
+    tip.classList.add('show');
+    // 估算国家在该缩放下的屏幕半径（包围盒高度一半 × k），tooltip 置于质心下方
+    const b = path.bounds(f);
+    const rH = ((b[1][1] - b[0][1]) / 2) * k;          // 内容坐标半高 → 屏幕半高
+    const below = Math.max(40, rH + 18);               // 质心下移量，至少 40px
+    const tw = tip.offsetWidth || 200;                 // 单次测量，避免遮挡小国中心
+    tip.style.left = (W / 2 - tw / 2) + 'px';
+    tip.style.top = (H / 2 + below) + 'px';
+  }
+  _searchEmboss = searchEmboss;   // 暴露给平行作用域的搜索 IIFE
   function onClick(e, d){
     const [cn, cont, tz, iso2] = infoOf(d);
     if (!iso2){ return; }
-    // 台湾是中国不可分割的一部分：点击台湾同样进入中国详情页（不单独展示首都）
-    const target = (iso2 === 'tw') ? 'cn' : iso2;
     // 点进国家 → 打开国家详情页（省份地图 / 公休日 / 汇率 / 人口 / 客户检索）
-    window.location.href = 'country.html?c=' + target;
+    // 台湾作为中国领土，infoOf 已返回 cn，点击进入中国详情页
+    window.location.href = 'country.html?c=' + iso2;
   }
 
   // 进入时若带 ?c=ISO2 / #country=ISO2 高亮并提示
@@ -568,9 +995,15 @@ window.addEventListener("error", function(e){
     const cn = entry ? entry[1][0] : iso2;
     banner.innerHTML = '正在建设：<b>'+cn+'</b> 国家专属板块（即将上线）';
     banner.style.display = 'block';
-    // 中国与台湾联动高亮（互为一部分）
-    const show = (iso2 === 'cn' || iso2 === 'tw') ? ['cn','tw'] : [iso2];
-    allPaths.classed('active', d => { const v = COUNTRY[(d.properties&&d.properties.name)]; return v && show.includes(v[3]); });
+    // 高亮指定国家（一个中国原则：台湾作为中国领土，检索/高亮中国时台湾一并高亮）
+    const show = [iso2];
+    if (iso2 === 'cn' && TAIWAN_FEATURE) show.push('__tw__');  // 标记台湾 feature
+    allPaths.classed('active', d => {
+      const nm = d.properties && d.properties.name;
+      if (nm === 'Taiwan') return show.includes('__tw__');
+      const v = COUNTRY[nm];
+      return v && show.includes(v[3]);
+    });
   }
   readParam();
 
@@ -578,9 +1011,12 @@ window.addEventListener("error", function(e){
   const WORLD_DOT_R = 1.5;   // 世界地图统一最小圆点尺寸（全图一致，仅缩点尺寸，绝不移动经纬度）
   function drawNigeriaPoints(){
     // 亮绿单色像素点，边缘清晰无发光无高亮；所有点统一为 WORLD_DOT_R，尺寸一致。
-    tiles.forEach(tg => {
-      tg.selectAll('circle.cust-pt').remove();
-      tg.selectAll('circle.cust-pt').data(NG_PTS).enter().append('circle')
+    // 画在 gCust 顶层图层（gEmboss 之上），使 3D 浮雕显示时客户原点位置始终可见。
+    gCust.selectAll('*').remove();
+    for (let i = 0; i < TILES; i++){
+      const ox = i * TILE;
+      const tileG = gCust.append('g').attr('class', 'cust-tile').attr('transform', `translate(${ox},0)`);
+      tileG.selectAll('circle.cust-pt').data(NG_PTS).enter().append('circle')
         .attr('class', 'cust-pt')
         .attr('cx', d => { const p = projection([d.lng, d.lat]); return p ? p[0] : -9999; })
         .attr('cy', d => { const p = projection([d.lng, d.lat]); return p ? p[1] : -9999; })
@@ -590,7 +1026,7 @@ window.addEventListener("error", function(e){
         .on('mousemove', (e, d) => showCustTip(e, d))
         .on('mouseleave', hideCustTip)
         .on('click', () => { window.location.href = 'country.html?c=ng'; });
-    });
+    }
   }
   function showCustTip(e, d){
     tipCn.textContent = d.company;
@@ -600,7 +1036,7 @@ window.addEventListener("error", function(e){
     tipCont.textContent = d.phone || '';
     tipTime.textContent = '点击查看国家客户检索';
     tip.classList.add('show');
-    const pad = 16, tw = tip.offsetWidth, th = tip.offsetHeight;
+    const pad = 16, tw = (_tipW || tip.offsetWidth), th = (_tipH || tip.offsetHeight);
     let x = e.clientX + pad, y = e.clientY + pad;
     if (x + tw > window.innerWidth) x = e.clientX - tw - pad;
     if (y + th > window.innerHeight) y = e.clientY - th - pad;
@@ -619,11 +1055,27 @@ window.addEventListener("error", function(e){
     panelWired = true;
     const trackBtn = document.getElementById('wmTrackBtn');
     const trackList = document.getElementById('wmTrackList');
-    trackList.innerHTML = HIGHLIGHT.map(code => {
-      const entry = Object.entries(COUNTRY).find(([k, v]) => v[3] === code);
-      const cn = entry ? (entry[1][0] + (DIAL[code] ? '(+' + DIAL[code] + ')' : '')) : code;
-      return '<a data-href="country.html?c=' + code + '"><span class="dot"></span>' + cn + '</a>';
-    }).join('');
+
+    // 渲染：传入国家项数组（{code, cn, isTrack}），空数组显示未找到
+    function renderTrack(items){
+      if (!items.length){ trackList.innerHTML = '<div class="wm-track-empty">未找到匹配的国家</div>'; return; }
+      trackList.innerHTML = items.map(it =>
+        '<a data-href="country.html?c=' + it.code + '">' +
+        (it.isTrack ? '<span class="dot"></span>' : '<span class="dot off"></span>') +
+        it.cn + '</a>'
+      ).join('');
+    }
+    // 默认：7 个外贸跟踪国
+    function defaultTrack(){
+      const items = HIGHLIGHT.map(code => {
+        const entry = Object.entries(COUNTRY).find(([k, v]) => v[3] === code);
+        const cn = entry ? (entry[1][0] + (DIAL[code] ? '(+' + DIAL[code] + ')' : '')) : code;
+        return { code, cn, isTrack: true };
+      });
+      renderTrack(items);
+    }
+
+    defaultTrack();
     trackList.addEventListener('click', (e) => {
       const a = e.target.closest('a'); if (!a) return;
       const href = a.getAttribute('data-href'); if (href) location.href = href;
@@ -653,14 +1105,36 @@ window.addEventListener("error", function(e){
   (function(){
     const input = document.getElementById('wmSearch');
     const results = document.getElementById('wmResults');
+    const clearBtn = document.getElementById('wmClear');
     if (!input || !results) return;
+    // 有内容时显示右侧"×"清除按钮，无内容时隐藏
+    function syncClear(){
+      if (clearBtn) clearBtn.hidden = !input.value;
+    }
+    // 拼音数据源已是"每国单一标准拼音（纯中文名直拼，按中国人习惯）"，故搜索只需精确全等即可，
+    // 无需模糊层：yindu→印度、gesidalijia→哥斯达黎加、yinniduiya→印度尼西亚，输入即命中。
+    // 清空搜索：清除文本 + 收起结果 + 隐藏"×" + 清除搜索触发的浮雕
+    function clearSearch(){
+      input.value = '';
+      results.hidden = true; results.innerHTML = '';
+      syncClear();
+      if (_hideEmboss) _hideEmboss();          // 取消浮雕（跨域桥接）
+      // 还原浮雕前的视图（尺寸 + 位置）
+      if (_embossView && _svg && _zoom){
+        const v = _embossView; _embossView = null;
+        _svg.transition().duration(450).call(_zoom.transform, v);
+      }
+      input.focus();
+    }
     function run(){
-      const raw = input.value.trim();
-      const q = raw.toLowerCase();
-      if (!q){ results.hidden = true; results.innerHTML = ''; return; }
+      const raw = input.value;
+      const q = raw.toLowerCase().trim();
+      syncClear();
+      // 搜索栏清空（手动删字 / 拼音被删空）时，自动取消浮雕并还原视图到浮雕前状态
+      if (!q){ clearSearch(); return; }
       // 区号反查：输入为纯数字或 +数字（如 +86 / 86）时，按国际区号匹配国家
       const digits = q.replace(/[^\d]/g, '');
-      const isDial = /^[\d+\s]+$/.test(raw) && digits.length >= 1 && digits.length <= 4;
+      const isDial = /^[\d+\s]+$/.test(raw.trim()) && digits.length >= 1 && digits.length <= 4;
       let cMs;
       if (isDial){
         cMs = Object.entries(COUNTRY)
@@ -669,9 +1143,12 @@ window.addEventListener("error", function(e){
       } else {
         cMs = Object.entries(COUNTRY)
           .map(([en, v]) => {
-            const ci = v[0].toLowerCase().indexOf(q);
-            const ei = en.toLowerCase().indexOf(q);
-            const pos = ci >= 0 ? ci : (ei >= 0 ? ei + 0.5 : 999);
+            const alias = (CN_ALIAS[v[3]] || '').toLowerCase();
+            const cnSearch = (v[0] + ' ' + alias).toLowerCase();
+            const ci = cnSearch.indexOf(q);                 // 中文名 + 中文别名 都参与模糊匹配
+            const ei = (en.toLowerCase() === q) ? 0 : 999;  // 英文整词（不再前缀，避免 don→Dominican 误判）
+            const pi = pinyinOf(v[3]).toLowerCase().split(/\s+/).filter(Boolean).includes(q) ? 0 : 999;  // 拼音整词
+            const pos = ci >= 0 ? ci : (ei >= 0 ? ei + 0.5 : (pi < 900 ? pi : 999));
             const tracked = TRACKED.indexOf(v[3]) >= 0;   // 外贸跟踪国家在并列时优先
             return { en, v, score: pos + (tracked ? -0.05 : 0) };
           })
@@ -680,6 +1157,30 @@ window.addEventListener("error", function(e){
           .slice(0, 8)
           .map(x => [x.en, x.v]);
       }
+      // 浮雕判定（2026-07-24 重构：彻底弃用前缀匹配，根治"拆东墙补西墙"）
+      // 设计原则：所有匹配均为【整词全等】，绝不做前缀/子串匹配。
+      //   - 拼音：PINYIN 每国是若干"完整拼音写法"空格分隔的整词（如 印度=yindu，印尼三写法=yinniduiya yindunixiya yinni）
+      //            → 只有 q 与其中某个整词全等才命中，yindu 不会误中 yinniduiya（因 yindu≠yinniduiya）
+      //   - 中文：COUNTRY 全称 或 CN_ALIAS 别名（也是整词）全等才命中（印尼≠印度尼西亚，靠别名整词补全）
+      //   - 英文：国家英文名整词全等才命中（不再做 startsWith，避免 ba 命中一堆）
+      //   整词全等 → 理论上最多 1 个命中（拼音/别名全局唯一），直接浮雕，无歧义、无脏视觉。
+      let exactIso2 = null;
+      if (q){
+        for (const [en, v] of cMs){
+          const cnFull  = v[0].toLowerCase();
+          const cnAlias = (CN_ALIAS[v[3]] || '').toLowerCase().split(/\s+/).filter(Boolean);
+          const enFull  = en.toLowerCase();
+          const pyList  = pinyinOf(v[3]).toLowerCase().split(/\s+/).filter(Boolean);
+          const hit =
+            (cnFull === q) || cnAlias.includes(q) ||          // 中文：全称 / 别名整词
+            (enFull === q) ||                                 // 英文：整词
+            // 铁律：iso2 代码(cn/us/jp/be/fr/de…) 不参与检索/浮雕。be 是比利时代码但非拼音全称，
+            // 按用户规则"拼音检索除印尼/阿联酋外必须全称"，iso2 通道关闭，杜绝 be→比利时 类误跳。
+            pyList.includes(q);                               // 拼音：整词（多写法之一）
+          if (hit){ exactIso2 = v[3]; break; }                // 整词全等必唯一，命中即停
+        }
+      }
+      if (exactIso2 && _searchEmboss){ _searchEmboss(exactIso2); }
       const custMs = ALL_CUSTOMERS.filter(r =>
         [r.company, r.phone, r.contact, r.address, r.city].some(x => (x || '').toLowerCase().includes(q))
       ).slice(0, 12);
@@ -688,7 +1189,8 @@ window.addEventListener("error", function(e){
         html += '<div class="grp">国家</div>';
         cMs.forEach(([en, v]) => {
           const code = DIAL[v[3]] ? '(+' + DIAL[v[3]] + ')' : '';
-          html += '<div class="item" data-href="country.html?c=' + v[3] + '"><span>' + v[0] + code + '</span><span class="tag">' + en + '</span></div>';
+          const hlMark = (exactIso2 && v[3] === exactIso2) ? ' <em class="emboss-on">● 已浮雕</em>' : '';
+          html += '<div class="item" data-href="country.html?c=' + v[3] + '"><span>' + v[0] + code + hlMark + '</span><span class="tag">' + en + '</span></div>';
         });
       }
       if (custMs.length){
@@ -706,6 +1208,10 @@ window.addEventListener("error", function(e){
       results.hidden = false;
     }
     input.addEventListener('input', run);
+    // Esc 清空（文本光标在搜索栏时）
+    input.addEventListener('keydown', (e) => { if (e.key === 'Escape') clearSearch(); });
+    // 右侧"×"按钮点击清空
+    if (clearBtn) clearBtn.addEventListener('click', clearSearch);
     results.addEventListener('click', (e) => {
       const it = e.target.closest('.item'); if (!it) return;
       const href = it.getAttribute('data-href'); if (href) location.href = href;
@@ -713,6 +1219,7 @@ window.addEventListener("error", function(e){
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.sp-search')) { results.hidden = true; results.innerHTML = ''; }
     });
+    syncClear();
   })();
 
   // —— 看门狗：若地球 SVG 被外部脚本意外移除（如预览平台重写 DOM），自动重建 ——
