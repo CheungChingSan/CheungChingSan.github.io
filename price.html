@@ -51,12 +51,12 @@
   .back:hover{ background:rgba(255,255,255,.2); transform:translateY(-1px); }
   .wrap{ max-width:1440px; margin:14px 18px 56px; padding:0; position:relative; z-index:2; }
   /* 主体布局：左侧搜索栏竖排 + 右侧结果网格 */
-  .layout{ display:grid; grid-template-columns:340px 1fr; gap:14px; align-items:start; }
-  /* 左侧栏整体固定：position:fixed 使其完全脱离文档流、绝对锁定在左侧，
-     永不随右侧产品信息栏的滚动而移动（比 sticky 在网格内更可靠）；
-     宽度与 .layout 首列 340px 一致，左缘与 .wrap(左对齐18px) 对齐；
-     内容超过视口高度时，仅栏内自行滚动 */
-  .sidebar{ position:fixed; top:118px; width:340px;
+  /* 主体布局：左侧工具栏 position:fixed 绝对锁定（脱离文档流），
+     右侧产品信息栏用 margin-left 让出左侧 340px+14px 间距，排布在工具栏右侧空白区；
+     fixed 比 sticky 在网格内更可靠，永随右栏滚动而漂移 */
+  .layout{ position:relative; }
+  .content{ margin-left:354px; }
+  .sidebar{ position:fixed; top:118px; left:18px; width:340px;
     max-height:calc(100vh - 134px); overflow-y:auto; overflow-x:hidden;
     padding-right:6px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.18) transparent; }
   .sidebar::-webkit-scrollbar{ width:8px; }
@@ -180,8 +180,8 @@
   .empty .big{ font-size:38px; margin-bottom:10px; }
   footer{ text-align:center; color:#5b6b85; font-size:12px; padding:10px 20px 30px; }
   @media (max-width:880px){
-    .layout{ grid-template-columns:1fr; }
-    .sidebar{ position:static; width:auto; max-height:none; overflow:visible; padding-right:0; }
+    .content{ margin-left:0; }
+    .sidebar{ position:static; left:auto; width:auto; max-height:none; overflow:visible; padding-right:0; }
   }
   @media (max-width:620px){
     .fields{ grid-template-columns:1fr; }
