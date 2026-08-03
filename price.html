@@ -765,6 +765,14 @@ results.addEventListener('keydown', function(e){
     const v = active === 'custom' ? numOf(customIn) : rateVals[active];
     return (isFinite(v) && v > 0) ? v : (RATE_CFG.today || 6.7894);
   }
+  // 暴露给「统一货币」模块：返回页面【当前选中】的汇率及其名称（今日/月初/月末/固定）
+  window.fxActiveRate = function(){
+    const r = rate();
+    const label = active === 'custom' ? '固定汇率'
+      : (active === 'today' ? '今日汇率'
+      : (active === 'monthStart' ? '月初汇率' : '月末汇率'));
+    return { rate: r, label: label };
+  };
   // 高亮当前作为换算源的输入框（双向模式下无只读，仅作视觉反馈）
   function applySrc(){
     rmbField.classList.toggle('src', lastEdited === 'rmb');
@@ -996,13 +1004,14 @@ results.addEventListener('keydown', function(e){
     // 底部：单一币种显示「总价格」；多币种分列「人民币合计 / 美金合计」，绝不混加（仅勾选项计入）
     const curKeys = Object.keys(sums);
     const anyOn = multiItems.some(it => it.checked);
-    // 统一货币模式：把所有勾选项按当前汇率折算成人民币合计 + 约等于美金（仅勾选项计入）
+    // 统一货币模式：把所有勾选项按【页面当前选中】汇率折算成人民币合计 + 约等于美金（仅勾选项计入）
     if (unifiedMode && anyOn){
-      const fx = (isFinite(RATE_CFG.today) && RATE_CFG.today > 0) ? RATE_CFG.today : 6.7894;
+      const f = (window.fxActiveRate ? window.fxActiveRate() : { rate: RATE_CFG.today, label: '今日汇率' });
+      const fx = (isFinite(f.rate) && f.rate > 0) ? f.rate : 6.7894;
       const cny = (sums['¥'] || 0) + (sums['$'] || 0) * fx;
       const usd = cny / fx;
       grandEl.textContent = '人民币合计：¥ ' + fmtThou(cny.toFixed(2), 2)
-        + '（约等于 $ ' + fmtThou(usd.toFixed(2), 2) + '）';
+        + '（按' + f.label + ' ' + fmtThou(fx.toFixed(4), 4) + ' 折算，约等于 $ ' + fmtThou(usd.toFixed(2), 2) + '）';
     } else if (multiItems.length === 0){
       grandEl.textContent = '总价格：0.00';
     } else if (!anyOn){
