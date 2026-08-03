@@ -135,6 +135,16 @@
   .mp-table th.num{ text-align:right; }   /* 表头与数字列右对齐，避免错位 */
   .mp-table .idx{ color:var(--muted); text-align:center; }
   .mp-table .code{ font-weight:800; }
+  .mp-table .ck{ width:34px; text-align:center; }
+  .mp-table .act{ width:96px; text-align:center; white-space:nowrap; }
+  .mp-ck{ width:24px; height:24px; line-height:1; padding:0; border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.04); border-radius:6px; cursor:pointer; font-size:14px; transition:.15s; }
+  .mp-ck:hover{ border-color:var(--sky); background:rgba(34,211,238,.14); }
+  .mp-del{ padding:5px 10px; font-size:12px; border-radius:8px; cursor:pointer; font-weight:600;
+    background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.5); color:#fca5a5; transition:.15s; }
+  .mp-del:hover{ background:rgba(248,113,113,.24); border-color:var(--danger); color:#fff; }
+  .mp-table tr.mp-off td{ opacity:.42; text-decoration:line-through; text-decoration-color:rgba(255,255,255,.25); }
+  .mp-table tr.mp-off .mp-ck{ opacity:1; text-decoration:none; }
   .mp-empty{ text-align:center; color:var(--muted); padding:26px; font-size:13px; }
   .mp-foot{ display:flex; align-items:center; justify-content:space-between; gap:12px;
     padding:14px 18px; border-top:1px solid rgba(255,255,255,.12); }
@@ -374,6 +384,7 @@
       <table class="mp-table">
         <thead>
           <tr>
+            <th class="ck"></th>
             <th class="idx">序号</th>
             <th>产品编码</th>
             <th>名称</th>
@@ -382,6 +393,7 @@
             <th class="num">单价</th>
             <th class="num">数量</th>
             <th class="num">价格</th>
+            <th class="act">操作</th>
           </tr>
         </thead>
         <tbody id="mpTbody"></tbody>
@@ -680,7 +692,7 @@ results.addEventListener('keydown', function(e){
     // 多品计价模式下：按币种分别累计（人民币/美金不可混加），用「+」连接各币种小计
     if (multiMode && multiItems.length){
       const sums = {};
-      multiItems.forEach(it => { const c = it.cur || ''; sums[c] = (sums[c] || 0) + it.lineTotal; });
+      multiItems.forEach(it => { if(!it.checked) return; const c = it.cur || ''; sums[c] = (sums[c] || 0) + it.lineTotal; });
       tot.value = Object.keys(sums)
         .map(c => (c ? c + ' ' : '') + fmtThou(sums[c].toFixed(2), 2))
         .join(' + ');
@@ -936,25 +948,30 @@ results.addEventListener('keydown', function(e){
     multiItems.push({
       code: k.dataset.code || '', name: k.dataset.name || '',
       model: k.dataset.model || '', spec: k.dataset.spec || '',
-      unit: unit, qty: qq, lineTotal: lineTotal, cur: k.dataset.cur || ''
+      unit: unit, qty: qq, lineTotal: lineTotal, cur: k.dataset.cur || '',
+      checked: true
     });
-    // 清空当前选中，便于挑选下一件产品
+    // 清空当前选中，便于挑选下一件产品；数量复位为默认 1
     k.classList.remove('sel');
     selSig = null;
     if(up){ up.value = ''; const f = up.closest('.field'); if(f) f.classList.remove('has-val');
       up.dispatchEvent(new Event('input', {bubbles:true})); }
+    if(qty){ qty.value = '1'; const f2 = qty.closest('.field'); if(f2) f2.classList.add('has-val');
+      qty.dispatchEvent(new Event('input', {bubbles:true})); }
     // calc() 会读取 multiItems 显示累计总价
   }
   function renderTable(){
     let rows = '';
-    const sums = {};   // 按币种分别小计：人民币、美金不可混加
+    const sums = {};   // 按币种分别小计：仅计入已勾选项，人民币/美金不可混加
     multiItems.forEach((it, i) => {
       const c = it.cur || '';
-      sums[c] = (sums[c] || 0) + it.lineTotal;
+      if (it.checked) sums[c] = (sums[c] || 0) + it.lineTotal;
       const specDisp = (it.spec && it.spec === it.model) ? '√' : (it.spec || '—');
       const unitStr = (c ? c + ' ' : '') + fmtThou(it.unit.toFixed(2), 2);
       const lineStr = (c ? c + ' ' : '') + fmtThou(it.lineTotal.toFixed(2), 2);
-      rows += '<tr>'
+      rows += '<tr class="' + (it.checked ? '' : 'mp-off') + '">'
+        + '<td class="ck"><button type="button" class="mp-ck" data-i="' + i + '" aria-label="包含/排除该笔">'
+          + (it.checked ? '✅' : '⬜') + '</button></td>'
         + '<td class="idx">' + (i + 1) + '</td>'
         + '<td class="code">' + esc(it.code) + '</td>'
         + '<td>' + esc(it.name) + '</td>'
@@ -963,13 +980,17 @@ results.addEventListener('keydown', function(e){
         + '<td class="num">' + unitStr + '</td>'
         + '<td class="num">' + fmtThou(it.qty.toFixed(0), 0) + '</td>'
         + '<td class="num">' + lineStr + '</td>'
+        + '<td class="act"><button type="button" class="mp-del" data-i="' + i + '">删除产品</button></td>'
         + '</tr>';
     });
-    tbody.innerHTML = rows || '<tr><td class="mp-empty" colspan="8">尚未添加任何产品</td></tr>';
-    // 底部：单一币种显示「总价格」；多币种分列「人民币合计 / 美金合计」，绝不混加
+    tbody.innerHTML = rows || '<tr><td class="mp-empty" colspan="10">尚未添加任何产品</td></tr>';
+    // 底部：单一币种显示「总价格」；多币种分列「人民币合计 / 美金合计」，绝不混加（仅勾选项计入）
     const curKeys = Object.keys(sums);
+    const anyOn = multiItems.some(it => it.checked);
     if (multiItems.length === 0){
       grandEl.textContent = '总价格：0.00';
+    } else if (!anyOn){
+      grandEl.textContent = '总价格：0.00（已全部取消勾选）';
     } else if (curKeys.length === 1){
       const c = curKeys[0];
       grandEl.textContent = '总价格：' + (c ? c + ' ' : '') + fmtThou(sums[c].toFixed(2), 2);
@@ -991,8 +1012,15 @@ results.addEventListener('keydown', function(e){
   });
   mpList.addEventListener('click', (e) => { e.stopPropagation(); openModal(); });
   if(modalClose) modalClose.addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+  // 仅右上角 × 号（及 ESC）可关闭计价清单；点击弹窗内部其他区域不再退出
   if(clearBtn) clearBtn.addEventListener('click', () => { multiItems = []; exitMulti(); closeModal(); });
+  // 勾选框 / 删除按钮：事件委托绑定在 tbody，删除或切换后重渲染并同步「产品总价」
+  tbody.addEventListener('click', (e) => {
+    const ck = e.target.closest('.mp-ck');
+    if (ck){ const i = +ck.dataset.i; if(multiItems[i]){ multiItems[i].checked = !multiItems[i].checked; renderTable(); recalcTotal(); } return; }
+    const del = e.target.closest('.mp-del');
+    if (del){ const i = +del.dataset.i; if(multiItems[i]){ multiItems.splice(i, 1); renderTable(); recalcTotal(); } return; }
+  });
 
   // ESC 全局重置：清空清单 + 退出多品模式 + 关闭弹窗
   _onReset(() => {
