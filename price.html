@@ -148,7 +148,10 @@
   .mp-empty{ text-align:center; color:var(--muted); padding:26px; font-size:13px; }
   .mp-foot{ display:flex; align-items:center; justify-content:space-between; gap:12px;
     padding:14px 18px; border-top:1px solid rgba(255,255,255,.12); }
-  .mp-grand{ font-size:14px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; }
+  .mp-grand{ font-size:14px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums;
+    display:flex; flex-direction:column; gap:5px; align-items:flex-start; line-height:1.4; }
+  .mp-detail{ font-size:12px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums;
+    padding:5px 9px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); }
   .mp-clear{ background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.5); color:#fca5a5; text-shadow:none; }
   .mp-clear:hover{ background:rgba(248,113,113,.22); border-color:var(--danger); color:#fff; }
   /* 统一货币按钮：常态普通边框；激活(统一人民币显示)时天蓝高亮，区别于红色「清空清单」 */
@@ -1010,8 +1013,12 @@ results.addEventListener('keydown', function(e){
       const fx = (isFinite(f.rate) && f.rate > 0) ? f.rate : 6.7894;
       const cny = (sums['¥'] || 0) + (sums['$'] || 0) * fx;
       const usd = cny / fx;
-      grandEl.textContent = '人民币合计：¥ ' + fmtThou(cny.toFixed(2), 2)
-        + '（按' + f.label + ' ' + fmtThou(fx.toFixed(4), 4) + ' 折算，约等于 $ ' + fmtThou(usd.toFixed(2), 2) + '）';
+      const rmbPart = (sums['¥'] || 0), usdPart = (sums['$'] || 0);
+      grandEl.innerHTML = '人民币合计：¥ ' + fmtThou(cny.toFixed(2), 2)
+        + '（按' + f.label + ' ' + fmtThou(fx.toFixed(4), 4) + ' 折算，约等于 $ ' + fmtThou(usd.toFixed(2), 2) + '）'
+        + '<span class="mp-detail">折算明细：人民币 ¥ ' + fmtThou(rmbPart.toFixed(2), 2)
+        + ' ＋ 美金 $ ' + fmtThou(usdPart.toFixed(2), 2) + ' × ' + fmtThou(fx.toFixed(4), 4)
+        + ' ＝ 合计 ¥ ' + fmtThou(cny.toFixed(2), 2) + '</span>';
     } else if (multiItems.length === 0){
       grandEl.textContent = '总价格：0.00';
     } else if (!anyOn){
@@ -1043,7 +1050,7 @@ results.addEventListener('keydown', function(e){
   if(unifyBtn) unifyBtn.addEventListener('click', () => {
     unifiedMode = !unifiedMode;
     unifyBtn.classList.toggle('mp-uni-on', unifiedMode);
-    unifyBtn.textContent = unifiedMode ? '分币种' : '统一货币';
+    unifyBtn.textContent = unifiedMode ? '币种分算' : '统一货币';
     renderTable();
   });
   // 勾选框 / 删除按钮：事件委托绑定在 tbody，删除或切换后重渲染并同步「产品总价」
