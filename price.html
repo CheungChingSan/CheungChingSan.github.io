@@ -29,17 +29,15 @@
   a{ color:var(--accent); text-decoration:none; }
   /* 品牌化顶部 */
   header.hero{ position:fixed; top:0; left:0; right:0; z-index:50; background:var(--bg2) url('bg.jpg') center top / cover no-repeat;
-    color:#fff; padding:34px 24px 40px; text-align:center; overflow:hidden; min-height:108px; box-shadow:0 8px 24px rgba(2,6,23,.55); }
+    color:#fff; padding:34px 24px 40px; text-align:center; overflow:hidden; min-height:108px; }
   header.hero::before{ content:''; position:absolute; inset:0; z-index:0;
     background:linear-gradient(180deg, rgba(15,23,42,.62) 0%, rgba(15,23,42,.30) 45%, rgba(15,23,42,.66) 100%),
       linear-gradient(135deg, rgba(13,148,136,.32) 0%, rgba(14,165,233,.28) 100%); }
   header.hero::after{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
     radial-gradient(78% 58% at 50% -8%, rgba(255,255,255,.14) 0%, transparent 60%); }
   header.hero .brand-block{ position:absolute; top:16px; left:16px; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
-  header.hero .brand-logo{ display:block; height:50px; width:auto; max-width:240px; }
-  header.hero .chinaclock{ font-size:26px; color:#fff; font-weight:700; margin-top:2px; min-height:34px; line-height:34px; white-space:nowrap; font-variant-numeric:tabular-nums;
-    font-variant-numeric:tabular-nums; letter-spacing:1px; line-height:1.1; width:100%;
-    display:flex; align-items:center; white-space:nowrap; }
+  header.hero .brand-logo{ max-height:50px; max-width:240px; width:auto; height:auto; }
+  header.hero .chinaclock{ font-size:26px; color:#fff; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; letter-spacing:1px; line-height:1.1; width:100%; display:flex; align-items:center; white-space:nowrap; }
   header.hero .chinaclock .seg{ display:inline-block; }
   header.hero .chinaclock .colon{ font-weight:400; }
   header.hero .chinaclock .tz{ margin-left:auto; padding-left:10px; }
@@ -109,6 +107,7 @@
   /* 今日/月初/月末汇率右侧数值：与标签同字号同格式，右对齐到单元格右侧 */
   /* 系统定值数值：与固定汇率输入框同宽(72px)、同行右对齐、文本居中 → 数字中心与输入框中心共垂直轴线 */
   .fx-rate .fx-val{ margin-left:auto; width:60px; text-align:center; font-size:12px; color:#fff; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.2px; }
+  /* 月初/月末标签右侧小注：首工作日 / 预估·上月末 等（与标签同排、随业务规则变化） */
   /* 月初/月末标签 + 下方小注：标签与注分行堆叠，注置于标签正下方 */
   .fx-rate .lbl-block{ position:relative; display:inline-flex; align-items:center; }
   .fx-rate .fx-note{ position:absolute; top:100%; left:0; margin-top:2px; font-size:10px; font-style:normal; color:#8aa0bd; opacity:.85; white-space:nowrap; line-height:1; }
@@ -505,7 +504,7 @@ document.addEventListener('keydown', e => {
 (function(){
   const usdIn = $('fxUsd'), rmbIn = $('fxRmb'), usdField = $('fxFieldUsd'), rmbField = $('fxFieldRmb');
   const swapBtn = $('fxSwap'), rateVal = $('fxRateVal'), row = document.querySelector('.fx-row');
-  const customIn = $('fxCustom'); const rateVals = { today: RATE_CFG.today, monthStart: RATE_CFG.today, monthEnd: RATE_CFG.today };
+  const customIn = $('fxCustom'); const rateVals = { today: RATE_CFG.today, monthStart: RATE_CFG.monthStart, monthEnd: RATE_CFG.monthEnd };
   const srcEl = document.querySelector('.fx-src');
   const checks = {};
   document.querySelectorAll('.fx-check').forEach(c => checks[c.dataset.rate] = c);
@@ -532,7 +531,7 @@ document.addEventListener('keydown', e => {
       sp.textContent = (isFinite(v) && v > 0) ? v.toFixed(4) : '';
     });
   }
-  // 今日参考汇率刷新（仅更新 today；月初/月末按业务规则独立取值，不再与今日强制相等）
+  // 今日汇率刷新（独立），不影响月初/月末
   function applyToday(val, srcText){
     if(!(val > 0)) return;
     RATE_CFG.today = val; rateVals.today = val;
@@ -540,17 +539,18 @@ document.addEventListener('keydown', e => {
     // 来源说明保持初始化时的静态文案（汇率来源：今日=…；月初/月末=…），不在每次抓取时改写，避免刷新闪现不同描述
     if(active === 'today') recalc();
   }
-  // 月初汇率：当月首个工作日参考汇率（网络取值成功时覆盖离线兜底）
+  // 月初汇率：当月首工作日汇率（独立）
   function applyMonthStart(val){
     if(!(val > 0)) return;
-    RATE_CFG.monthStart = val; rateVals.monthStart = val; showFxVals();
+    RATE_CFG.monthStart = val; rateVals.monthStart = val;
+    showFxVals();
     if(active === 'monthStart') recalc();
   }
-  // 月末汇率：isEstimate=true 表示当月未结束、暂用上月末汇率作为预估；false 表示已取得当月真实末工作日汇率
+  // 月末汇率：当月末工作日（实际）或上月末（预估）；isEstimate 控制标注
   function applyMonthEnd(val, isEstimate){
     if(!(val > 0)) return;
     RATE_CFG.monthEnd = val; rateVals.monthEnd = val;
-    const note = document.getElementById('fxMonthEndNote');
+    var note = document.getElementById('fxMonthEndNote');
     if(note) note.textContent = isEstimate ? '预估·上月末' : '实际·当月末';
     showFxVals();
     if(active === 'monthEnd') recalc();
@@ -643,7 +643,7 @@ document.addEventListener('keydown', e => {
     });
   });
   // 初始化显示由 RATE_CFG 驱动（覆盖 HTML 占位），确保刷新锚点生效
-  // 今日/月初/月末为系统统一取值，仅勾选无输入框；汇率值由 rateVals 提供（applyRate 每次打开页面刷新 today）
+  // 今日/月初/月末为独立取值，仅勾选无输入框；汇率值由 rateVals 提供（autoRate 每次打开页面按业务规则刷新）
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   showFxVals();
   srcEl.innerHTML = '汇率来源：今日=<b>'+esc(RATE_CFG.src)+'</b>；月初/月末=<b>'+esc(RATE_CFG.histSrc)+'</b>（每次打开页面自动读取）。';
