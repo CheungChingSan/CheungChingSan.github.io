@@ -132,6 +132,7 @@
     background:rgba(15,23,42,.98); }
   .mp-table td{ padding:9px 10px; border-bottom:1px solid rgba(255,255,255,.08); vertical-align:top; }
   .mp-table td.num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .mp-table th.num{ text-align:right; }   /* 表头与数字列右对齐，避免错位 */
   .mp-table .idx{ color:var(--muted); text-align:center; }
   .mp-table .code{ font-weight:800; }
   .mp-empty{ text-align:center; color:var(--muted); padding:26px; font-size:13px; }
@@ -399,7 +400,8 @@ const $ = (id) => document.getElementById(id);
 $('total2').textContent = DATA.length;
 // 多品计价：全局状态（供 calc() 与弹窗共用）
 let multiMode = false;       // 是否处于多品计价模式（[多品计价]→[确认价格]）
-let multiItems = [];         // 已记录产品：{code,name,model,spec,unit,qty,lineTotal}
+let multiItems = [];         // 已记录产品：{code,name,model,spec,unit,qty,lineTotal,cur}
+let selCur = '';             // 当前选中价格的币种（¥ / $ / ''）
 let mpModalEl = null;        // 计价清单弹窗元素（供 ESC 优先关闭）
 
 // 汇率配置（最终来源均为央行汇率）：今日 / 月初 / 月末 一律以「中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价」为唯一权威。
@@ -512,10 +514,15 @@ function fieldRows(p, sq, mq){
     else if (k === '型号') val = hl(fields[k], mq);
     else val = esc(fields[k]);
     const label = PRICE_LABELS[k] || k;
+    // 币种：数据键含 (¥)/人民币 → 人民币；含 ($)/美金/美元 → 美金
+    let cur = '';
+    if (k.indexOf('($)') >= 0 || k.indexOf('美金') >= 0 || k.indexOf('美元') >= 0) cur = '$';
+    else if (k.indexOf('(¥)') >= 0 || k.indexOf('人民币') >= 0) cur = '¥';
     if (isPrice){
-      // 可点击价格标题：携带该产品的编码/名称/型号/规格与价格值，供点击后回填搜索栏与产品单价
+      // 可点击价格标题：携带该产品的编码/名称/型号/规格、价格值与币种，供点击后回填搜索栏与产品单价
       h += '<div class="kv"><span class="k price-key" role="button" tabindex="0"'
         + ' data-val="'+esc(String(fields[k]))+'"'
+        + ' data-cur="'+cur+'"'
         + ' data-code="'+esc(code)+'"'
         + ' data-name="'+esc(name)+'"'
         + ' data-model="'+esc(model)+'"'
@@ -614,11 +621,13 @@ results.addEventListener('click', function(e){
   if(kEl.classList.contains('sel')){
     kEl.classList.remove('sel');
     selSig = null;
+    selCur = '';
     if(up){ up.value = ''; up.dispatchEvent(new Event('input',{bubbles:true})); }
     return;
   }
   // 选中新价格：仅填充[产品单价] + 价格按钮变黄（不联动搜索栏、不变黄搜索栏标题）
   selSig = { code: code, val: val };
+  selCur = kEl.dataset.cur || '';
   document.querySelectorAll('.kv .k.price-key.sel').forEach(x=>x.classList.remove('sel'));
   kEl.classList.add('sel');
   if(up){ up.value = val; up.dispatchEvent(new Event('input',{bubbles:true})); }
@@ -627,6 +636,7 @@ results.addEventListener('click', function(e){
 _onReset(() => {
   document.querySelectorAll('.kv .k.price-key.sel').forEach(x => x.classList.remove('sel'));
   selSig = null;
+  selCur = '';
   const up = $('qUnitPrice');
   if (up) { up.value = ''; const f = up.closest('.field'); if (f) f.classList.remove('has-val'); }
 });
@@ -667,14 +677,22 @@ results.addEventListener('keydown', function(e){
     if(f) f.classList.toggle('has-val', el.value !== '');
   }
   function calc(){
-    // 多品计价模式下：总价显示已记录产品的累计总额
+    // 多品计价模式下：按币种分别累计（人民币/美金不可混加），用「+」连接各币种小计
     if (multiMode && multiItems.length){
-      const sum = multiItems.reduce((s, it) => s + it.lineTotal, 0);
-      tot.value = sum > 0 ? fmtThou(sum.toFixed(2), 2) : '';
+      const sums = {};
+      multiItems.forEach(it => { const c = it.cur || ''; sums[c] = (sums[c] || 0) + it.lineTotal; });
+      tot.value = Object.keys(sums)
+        .map(c => (c ? c + ' ' : '') + fmtThou(sums[c].toFixed(2), 2))
+        .join(' + ');
       return;
     }
     const a = numOf(up), b = numOf(qty);
-    tot.value = (isFinite(a) && isFinite(b)) ? fmtThou((a * b).toFixed(2), 2) : '';
+    if (isFinite(a) && isFinite(b)){
+      // 单价已带币种（选中价格标题时记录），总价附上对应币种符号，避免币种混淆
+      tot.value = (selCur ? selCur + ' ' : '') + fmtThou((a * b).toFixed(2), 2);
+    } else {
+      tot.value = '';
+    }
   }
   function clearCalc(id){
     const el = $(id); if(!el) return;
@@ -918,7 +936,7 @@ results.addEventListener('keydown', function(e){
     multiItems.push({
       code: k.dataset.code || '', name: k.dataset.name || '',
       model: k.dataset.model || '', spec: k.dataset.spec || '',
-      unit: unit, qty: qq, lineTotal: lineTotal
+      unit: unit, qty: qq, lineTotal: lineTotal, cur: k.dataset.cur || ''
     });
     // 清空当前选中，便于挑选下一件产品
     k.classList.remove('sel');
@@ -928,23 +946,40 @@ results.addEventListener('keydown', function(e){
     // calc() 会读取 multiItems 显示累计总价
   }
   function renderTable(){
-    let rows = '', grand = 0;
+    let rows = '';
+    const sums = {};   // 按币种分别小计：人民币、美金不可混加
     multiItems.forEach((it, i) => {
-      grand += it.lineTotal;
+      const c = it.cur || '';
+      sums[c] = (sums[c] || 0) + it.lineTotal;
       const specDisp = (it.spec && it.spec === it.model) ? '√' : (it.spec || '—');
+      const unitStr = (c ? c + ' ' : '') + fmtThou(it.unit.toFixed(2), 2);
+      const lineStr = (c ? c + ' ' : '') + fmtThou(it.lineTotal.toFixed(2), 2);
       rows += '<tr>'
         + '<td class="idx">' + (i + 1) + '</td>'
         + '<td class="code">' + esc(it.code) + '</td>'
         + '<td>' + esc(it.name) + '</td>'
         + '<td>' + esc(it.model) + '</td>'
         + '<td>' + esc(specDisp) + '</td>'
-        + '<td class="num">' + fmtThou(it.unit.toFixed(2), 2) + '</td>'
+        + '<td class="num">' + unitStr + '</td>'
         + '<td class="num">' + fmtThou(it.qty.toFixed(0), 0) + '</td>'
-        + '<td class="num">' + fmtThou(it.lineTotal.toFixed(2), 2) + '</td>'
+        + '<td class="num">' + lineStr + '</td>'
         + '</tr>';
     });
     tbody.innerHTML = rows || '<tr><td class="mp-empty" colspan="8">尚未添加任何产品</td></tr>';
-    grandEl.textContent = '总价格：' + (grand > 0 ? fmtThou(grand.toFixed(2), 2) : '0.00');
+    // 底部：单一币种显示「总价格」；多币种分列「人民币合计 / 美金合计」，绝不混加
+    const curKeys = Object.keys(sums);
+    if (multiItems.length === 0){
+      grandEl.textContent = '总价格：0.00';
+    } else if (curKeys.length === 1){
+      const c = curKeys[0];
+      grandEl.textContent = '总价格：' + (c ? c + ' ' : '') + fmtThou(sums[c].toFixed(2), 2);
+    } else {
+      const segs = curKeys.map(c => {
+        const lbl = c === '$' ? '美金' : (c === '¥' ? '人民币' : '其他');
+        return lbl + '合计：' + (c ? c + ' ' : '') + fmtThou(sums[c].toFixed(2), 2);
+      });
+      grandEl.textContent = segs.join('   ·   ');
+    }
   }
   function openModal(){ renderTable(); modal.hidden = false; }
   function closeModal(){ modal.hidden = true; }
