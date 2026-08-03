@@ -151,6 +151,10 @@
   .mp-grand{ font-size:14px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; }
   .mp-clear{ background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.5); color:#fca5a5; text-shadow:none; }
   .mp-clear:hover{ background:rgba(248,113,113,.22); border-color:var(--danger); color:#fff; }
+  /* 统一货币按钮：常态普通边框；激活(统一人民币显示)时天蓝高亮，区别于红色「清空清单」 */
+  .mp-foot-btns{ display:flex; gap:8px; align-items:center; flex:none; }
+  .mp-btn.mp-uni-on{ background:rgba(34,211,238,.18); border-color:var(--sky); color:#a5f3fc; text-shadow:none; }
+  .mp-btn.mp-uni-on:hover{ background:rgba(34,211,238,.28); }
   /* 汇率换算模块（位于搜索栏下方） */
   .fx{ margin-top:8px; }
   .fx-title{ font-size:12px; font-weight:700; color:#fff; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.3); margin-bottom:8px; }
@@ -401,7 +405,10 @@
     </div>
     <div class="mp-foot">
       <span id="mpGrandTotal" class="mp-grand">总价格：0.00</span>
-      <button type="button" id="mpClear" class="mp-btn mp-clear">清空清单</button>
+      <span class="mp-foot-btns">
+        <button type="button" id="mpUnify" class="mp-btn">统一货币</button>
+        <button type="button" id="mpClear" class="mp-btn mp-clear">清空清单</button>
+      </span>
     </div>
   </div>
 </div>
@@ -927,6 +934,8 @@ results.addEventListener('keydown', function(e){
   const mpMulti = $('mpMulti'), mpList = $('mpList');
   const modal = $('mpModal'), modalClose = $('mpModalClose');
   const tbody = $('mpTbody'), grandEl = $('mpGrandTotal'), clearBtn = $('mpClear');
+  const unifyBtn = $('mpUnify');
+  let unifiedMode = false;   // 计价清单底部「统一货币」：把所有勾选项折算成人民币合计 + 约等于美金
   if(!mpMulti || !mpList || !modal) return;
   mpModalEl = modal;
 
@@ -987,7 +996,14 @@ results.addEventListener('keydown', function(e){
     // 底部：单一币种显示「总价格」；多币种分列「人民币合计 / 美金合计」，绝不混加（仅勾选项计入）
     const curKeys = Object.keys(sums);
     const anyOn = multiItems.some(it => it.checked);
-    if (multiItems.length === 0){
+    // 统一货币模式：把所有勾选项按当前汇率折算成人民币合计 + 约等于美金（仅勾选项计入）
+    if (unifiedMode && anyOn){
+      const fx = (isFinite(RATE_CFG.today) && RATE_CFG.today > 0) ? RATE_CFG.today : 6.7894;
+      const cny = (sums['¥'] || 0) + (sums['$'] || 0) * fx;
+      const usd = cny / fx;
+      grandEl.textContent = '人民币合计：¥ ' + fmtThou(cny.toFixed(2), 2)
+        + '（约等于 $ ' + fmtThou(usd.toFixed(2), 2) + '）';
+    } else if (multiItems.length === 0){
       grandEl.textContent = '总价格：0.00';
     } else if (!anyOn){
       grandEl.textContent = '总价格：0.00（已全部取消勾选）';
@@ -1014,6 +1030,13 @@ results.addEventListener('keydown', function(e){
   if(modalClose) modalClose.addEventListener('click', closeModal);
   // 仅右上角 × 号（及 ESC）可关闭计价清单；点击弹窗内部其他区域不再退出
   if(clearBtn) clearBtn.addEventListener('click', () => { multiItems = []; exitMulti(); closeModal(); });
+  // 统一货币：点击在「分币种显示 ↔ 统一人民币合计(约等于美金)」之间切换
+  if(unifyBtn) unifyBtn.addEventListener('click', () => {
+    unifiedMode = !unifiedMode;
+    unifyBtn.classList.toggle('mp-uni-on', unifiedMode);
+    unifyBtn.textContent = unifiedMode ? '分币种' : '统一货币';
+    renderTable();
+  });
   // 勾选框 / 删除按钮：事件委托绑定在 tbody，删除或切换后重渲染并同步「产品总价」
   tbody.addEventListener('click', (e) => {
     const ck = e.target.closest('.mp-ck');
