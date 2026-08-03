@@ -68,7 +68,7 @@
   /* 搜索栏：两行两列（编码/名称 · 型号/规格） */
   .search-col{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
-  .field label{ font-size:12px; color:#fff; font-weight:700; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.35); }
+  .field label{ display:flex; align-items:baseline; gap:6px; font-size:12px; color:#fff; font-weight:700; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,255,255,.35); }
   .field .input-wrap{ position:relative; display:flex; align-items:center; }
   .field input{ width:100%; padding:11px 38px 11px 13px; border-radius:11px; font-size:15px; color:var(--text);
     background:rgba(255,255,255,.05); border:1px solid var(--sky); transition:.18s; }
@@ -173,9 +173,8 @@
     border-radius:9px; padding:7px 10px; line-height:1.45; }
   .remark .rk{ color:var(--muted); font-weight:700; margin-right:6px; }
   mark{ background:rgba(250,204,21,.35); color:#fff; padding:0 2px; border-radius:3px; }
-  /* 产品规格字段内联提示（替代原右下角悬浮窗） */
-  .spec-hint{ font-size:11px; color:var(--muted); font-weight:400; margin-top:4px; line-height:1.4; }
-  .spec-hint b{ color:var(--accent); }
+  /* 产品规格字段右侧小字提示（置于标签右侧） */
+  .spec-hint{ font-size:11px; color:var(--muted); font-weight:400; white-space:nowrap; line-height:1.4; }
   .empty{ text-align:center; color:var(--muted); padding:48px 20px; font-size:14px; }
   .empty .big{ font-size:38px; margin-bottom:10px; }
   footer{ text-align:center; color:#5b6b85; font-size:12px; padding:10px 20px 30px; }
@@ -233,12 +232,11 @@
             </div>
           </div>
           <div class="field">
-            <label for="qSpec">产品规格</label>
+            <label for="qSpec">产品规格 <span class="spec-hint">[√则与型号相同]</span></label>
             <div class="input-wrap">
               <input id="qSpec" type="text" autocomplete="off" spellcheck="false">
               <button type="button" class="clear-x" data-clear="qSpec" title="清空产品规格" aria-label="清空产品规格">×</button>
             </div>
-            <div class="spec-hint">规格显示 <b>√</b> 即与型号相同</div>
           </div>
         </div>
         <div class="calc">
