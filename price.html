@@ -268,13 +268,13 @@
             </div>
           </div>
           <div class="fx-rates">
-            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span><span class="fx-val" data-fxval="today">6.7894</span></label>
-            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl-block"><span class="lbl">月初汇率</span><i class="fx-note">首工作日</i></span><span class="fx-val" data-fxval="monthStart">6.7894</span></label>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="today" checked><span class="lbl">今日汇率</span><span class="fx-val" data-fxval="today">6.7910</span></label>
+            <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthStart"><span class="lbl-block"><span class="lbl">月初汇率</span><i class="fx-note">首工作日</i></span><span class="fx-val" data-fxval="monthStart">6.7830</span></label>
             <label class="fx-rate"><input type="checkbox" class="fx-check" data-rate="monthEnd"><span class="lbl-block"><span class="lbl">月末汇率</span><i class="fx-note" id="fxMonthEndNote">预估·上月末</i></span><span class="fx-val" data-fxval="monthEnd">6.7894</span></label>
             <label class="fx-rate custom"><input type="checkbox" class="fx-check" data-rate="custom"><span class="lbl">固定汇率</span><span class="fx-rate-in-wrap sm"><input id="fxCustom" class="fx-rate-in-sm" type="text" inputmode="decimal" value="7.00"><button type="button" class="clear-x" data-fxclr="fxCustom" title="清空" aria-label="清空">×</button></span></label>
           </div>
-          <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7894</b> RMB</div>
-          <div class="fx-src">汇率来源：今日=<b>人民币汇率中间价</b>；月初/月末=<b>fawazahmed0 历史汇率</b>（按业务规则取首/末工作日，均每次打开页面自动读取）。</div>
+          <div class="fx-note">当前生效：1 USD = <b id="fxRateVal">6.7910</b> RMB</div>
+          <div class="fx-src">汇率来源（最终来源均为央行汇率）：今日 / 月初 / 月末 均取自「中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价」。第三方 fawazahmed0 为市场汇率(≈6.75)，非央行中间价，已弃用。</div>
           <div class="fx-disc">预估月末汇率仅供内部经营测算参考，不作为账务处理依据。</div>
         </div>
       </div>
@@ -293,17 +293,27 @@ const DATA = [{"code": "HS00001", "name": "高频手术设备", "fields": {"规�
 const $ = (id) => document.getElementById(id);
 $('total2').textContent = DATA.length;
 
-// 汇率配置：今日汇率=央行人民币汇率中间价，由「每次打开页面自动读取同源 fx_rate.json」覆盖（RATE_CFG.today / RATE_CFG.src 是刷新锚点）
-// 月初/月末：按业务规则（首/末工作日）取 fawazahmed0 历史汇率（稳定、每日更新、带 CORS），与今日独立取值
-// 更新机制：不依赖自动化任务；每次打开/登录网页即 fetch fx_rate.json（今日，权威中间价）+ fawazahmed0（月初/月末历史），失败回退内置兜底
+// 汇率配置（最终来源均为央行汇率）：今日 / 月初 / 月末 一律以「中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价」为唯一权威。
+// 今日：每次打开页面自动读取同源 fx_rate.json（央行中间价，由管理员随官方公布更新）；
+// 月初/月末：按业务规则取当月首/末工作日的央行中间价（见 centralBank 锚点表，随官方公布维护）。
+// 第三方 fawazahmed0 返回的是市场汇率(≈6.75)，并非央行中间价(≈6.78~6.79)，与「最终来源须为央行汇率」不符，已弃用。
 const RATE_CFG = {
-  today: 6.7894,                                  // 今日参考汇率离线兜底默认（央行中间价，最后已知）
-  monthStart: 6.7941,                             // 月初汇率离线兜底（2026-07-01 首工作日参考值）
-  monthEnd: 6.7923,                               // 月末汇率离线兜底（2026-06-30 上月末参考值）
-  src: "人民币汇率中间价",                          // fx_rate.json 权威来源标注（央行中间价）
-  histUrl: "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{date}/v1/currencies/usd.json", // 历史汇率(按日期) 带 CORS
-  histSrc: "fawazahmed0 历史汇率",                // 月初/月末历史汇率源标注
-  autoUpdate: true
+  today: 6.7910,          // 今日央行中间价离线兜底（2026-08-03）
+  monthStart: 6.7830,     // 月初央行中间价（2026-08-01，8月首工作日）
+  monthEnd: 6.7894,       // 月末央行中间价（2026-07-31，7月收官日/末工作日；月度期间作预估）
+  src: "中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价",
+  histSrc: "中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价",
+  histUrl: "",            // 已弃用第三方市场汇率源 fawazahmed0（≈6.75，非央行中间价）
+  autoUpdate: true,
+  // 央行中间价锚点表（随官方公布维护；key=YYYY-MM-DD，value=当日 USD/CNY 中间价）。无免费「央行中间价」历史 API，故以官方公布的锚点值为准。
+  centralBank: {
+    "2026-07-31": 6.7894, // 7月收官日（末工作日）
+    "2026-08-01": 6.7830, // 8月首工作日
+    "2026-08-03": 6.7910  // 今日
+  },
+  todayDate: "2026-08-03",
+  monthStartDate: "2026-08-01",
+  monthEndDate: "2026-07-31"
 };
 
 const qCode = $('qCode'), qName = $('qName'), qSpec = $('qSpec'), qModel = $('qModel');
@@ -536,6 +546,7 @@ document.addEventListener('keydown', e => {
     if(!(val > 0)) return;
     RATE_CFG.today = val; rateVals.today = val;
     rateVal.textContent = val.toFixed(4);
+    showFxVals();   // 同步刷新「今日汇率」列表数字（避免实时源刷新后列表仍显示离线兜底值）
     // 来源说明保持初始化时的静态文案（汇率来源：今日=…；月初/月末=…），不在每次抓取时改写，避免刷新闪现不同描述
     if(active === 'today') recalc();
   }
@@ -646,7 +657,11 @@ document.addEventListener('keydown', e => {
   // 今日/月初/月末为独立取值，仅勾选无输入框；汇率值由 rateVals 提供（autoRate 每次打开页面按业务规则刷新）
   rateVal.textContent = RATE_CFG.today.toFixed(4);
   showFxVals();
-  srcEl.innerHTML = '汇率来源：今日=<b>'+esc(RATE_CFG.src)+'</b>；月初/月末=<b>'+esc(RATE_CFG.histSrc)+'</b>（每次打开页面自动读取）。';
+  srcEl.innerHTML = '汇率来源（最终来源均为央行汇率）：今日 / 月初 / 月末 均取自「<b>'+esc(RATE_CFG.src)+'</b>」。'
+    + ' 今日('+RATE_CFG.todayDate+') '+RATE_CFG.today.toFixed(4)
+    + '；月初(首工作日 '+RATE_CFG.monthStartDate+') '+RATE_CFG.monthStart.toFixed(4)
+    + '；月末(末工作日 '+RATE_CFG.monthEndDate+') '+RATE_CFG.monthEnd.toFixed(4)
+    + '。第三方 fawazahmed0 为市场汇率(≈6.75)，非央行中间价，已弃用。';
   applySrc(); syncMainX(); recalc();
   // 每次打开/登录网页界面自动刷新（无自动化任务）：今日抓实时源；月初/月末按业务规则抓历史汇率源
   if(RATE_CFG.autoUpdate){
@@ -659,29 +674,27 @@ document.addEventListener('keydown', e => {
       function firstWorkday(y,m){ let d=new Date(y,m,1); while(isWeekend(d)) d=addDays(d,1); return d; }
       function lastWorkday(y,m){ let d=new Date(y,m+1,0); while(isWeekend(d)) d=addDays(d,-1); return d; }
       function prevMonthLast(y,m){ let d=new Date(y,m,0); while(isWeekend(d)) d=addDays(d,-1); return d; }
-      // 历史汇率抓取：从指定日期起向前回退最多 7 天，取最近一个已发布的工作日汇率（兼容周末/节假日无数据）
-      function fetchHist(dateObj, onOk, onFail){
-        let tries=0;
-        (function step(d){
-          const url = RATE_CFG.histUrl.replace('{date}', fmtDate(d));
-          fetch(url, {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
-            if(j && j.usd && j.usd.cny > 0){ onOk(j.usd.cny); } else { throw 0; }
-          }).catch(function(){
-            if(++tries < 7) step(addDays(d,-1)); else if(onFail) onFail();
-          });
-        })(dateObj);
-      }
-      // 今日：以同源 fx_rate.json（央行人民币汇率中间价，权威）为基准，每次打开页面读取最新值
-      // 满足"自动刷新"且数值为官方中间价(~6.78)；外部市场源(open.er-api ~6.76)非官方中间价，不再覆盖今日
+      // 今日：每次打开页面自动读取同源 fx_rate.json（央行中间价，权威）
       fetch('fx_rate.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
-        if(j && j.usdCny>0) applyToday(j.usdCny, (j.src||'人民币汇率中间价')+(j.date?' · '+j.date:''));
+        if(j && j.usdCny>0) applyToday(j.usdCny, (j.src||RATE_CFG.src)+(j.date?' · '+j.date:''));
       }).catch(function(){});
-      // 月初：当月首个工作日汇率（网络取值成功时覆盖离线兜底）
-      fetchHist(firstWorkday(curY,curM), function(v){ applyMonthStart(v); }, function(){});
+      // 月初/月末：从央行中间价锚点表(centralBank)取对应工作日官方中间价（缺失日期向前回退≤7天）；无则保留离线兜底
+      function lookupCB(dateObj, maxBack){
+        let tries=0, d=dateObj;
+        while(tries++ <= (maxBack||7)){
+          const v = RATE_CFG.centralBank[fmtDate(d)];
+          if(v>0) return v;
+          d = addDays(d,-1);
+        }
+        return undefined;
+      }
+      // 月初锚点取当月 1 日（用户提供的月初参考日；若 1 日为周末则 lookupCB 向前回退取最近已发布工作日）
+      const ms = lookupCB(new Date(curY, curM, 1), 7);
+      if(ms>0) applyMonthStart(ms);
       // 月末：当月已至末工作日→取实际末工作日汇率；否则（月度期间）暂用上月末汇率作为预估
       const lw = lastWorkday(curY,curM);
-      if(now > lw){ fetchHist(lw, function(v){ applyMonthEnd(v,false); }, function(){}); }
-      else { fetchHist(prevMonthLast(curY,curM), function(v){ applyMonthEnd(v,true); }, function(){}); }
+      if(now > lw){ const me = lookupCB(lw, 7); if(me>0) applyMonthEnd(me, false); }
+      else { const me = lookupCB(prevMonthLast(curY,curM), 7); if(me>0) applyMonthEnd(me, true); }
     })();
   }
 })();
