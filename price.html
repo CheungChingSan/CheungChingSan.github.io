@@ -352,7 +352,7 @@
           <div class="fx-rates">
             <div class="fx-rate-cell" data-rate="today" role="button" tabindex="0">
               <div class="fx-rate">今日汇率</div>
-              <div class="fx-val" data-fxval="today">6.7910</div>
+              <div class="fx-val" data-fxval="today">6.7917</div>
             </div>
             <div class="fx-rate-cell" data-rate="monthStart" role="button" tabindex="0">
               <div class="fx-rate">月初汇率</div>
@@ -430,7 +430,7 @@ let mpModalEl = null;        // 计价清单弹窗元素（供 ESC 优先关闭�
 // 月初/月末：按业务规则取当月首/末工作日的央行中间价（见 centralBank 锚点表，随官方公布维护）。
 // 第三方 fawazahmed0 返回的是市场汇率(≈6.75)，并非央行中间价(≈6.78~6.79)，与「最终来源须为央行汇率」不符，已弃用。
 const RATE_CFG = {
-  today: 6.7910,          // 今日央行中间价离线兜底（2026-08-03）
+  today: 6.7917,          // 今日央行中间价离线兜底（2026-08-04）
   monthStart: 6.7910,     // 月初央行中间价（2026-08-03，8月首交易日/首工作日）
   monthEnd: 6.7894,       // 月末央行中间价（2026-07-31，7月收官日/末工作日；月度期间作预估）
   src: "中国外汇交易中心（中国人民银行授权发布）· 人民币汇率中间价",
@@ -440,9 +440,10 @@ const RATE_CFG = {
   // 央行中间价锚点表（随官方公布维护；key=YYYY-MM-DD，value=当日 USD/CNY 中间价）。无免费「央行中间价」历史 API，故以官方公布的锚点值为准。
   centralBank: {
     "2026-07-31": 6.7894, // 7月收官日（末工作日）
-    "2026-08-03": 6.7910  // 今日 / 8月首交易日（首工作日；央行中间价仅交易日发布）
+    "2026-08-03": 6.7910, // 8月首交易日（首工作日；央行中间价仅交易日发布）
+    "2026-08-04": 6.7917  // 今日（2026-08-04 央行中间价）
   },
-  todayDate: "2026-08-03",
+  todayDate: "2026-08-04",
   monthStartDate: "2026-08-03",
   monthEndDate: "2026-07-31"
 };
