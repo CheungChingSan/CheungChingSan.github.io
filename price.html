@@ -29,13 +29,13 @@
   a{ color:var(--accent); text-decoration:none; }
   /* 品牌化顶部 */
   header.hero{ position:fixed; top:0; left:0; right:0; z-index:50; background:var(--bg2) url('bg.jpg') center top / cover no-repeat;
-    color:#fff; padding:34px 24px 40px; text-align:center; overflow:hidden; min-height:108px; }
+    color:#fff; padding:34px 24px 40px; overflow:hidden; min-height:108px; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
   header.hero::before{ content:''; position:absolute; inset:0; z-index:0;
     background:linear-gradient(180deg, rgba(15,23,42,.62) 0%, rgba(15,23,42,.30) 45%, rgba(15,23,42,.66) 100%),
       linear-gradient(135deg, rgba(13,148,136,.32) 0%, rgba(14,165,233,.28) 100%); }
   header.hero::after{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
     radial-gradient(78% 58% at 50% -8%, rgba(255,255,255,.14) 0%, transparent 60%); }
-  header.hero .brand-block{ position:absolute; top:16px; left:16px; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+  header.hero .brand-block{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; flex:none; }
   header.hero .brand-logo{ max-height:50px; max-width:240px; width:auto; height:auto; }
   header.hero .chinaclock{ font-size:26px; color:#fff; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; letter-spacing:1px; line-height:1.1; width:100%; display:flex; align-items:center; white-space:nowrap; }
   header.hero .chinaclock .seg{ display:inline-block; }
@@ -45,7 +45,7 @@
   header.hero .brand-row{ display:flex; align-items:center; gap:10px; }
   header.hero .brand-title{ font-size:28px; margin:0; letter-spacing:1px; font-weight:700; color:#fff; white-space:nowrap; }
   header.hero p{ margin:8px 0 0; opacity:.9; font-size:13px; }
-  .back{ position:fixed; top:16px; right:16px; z-index:60; display:inline-flex; align-items:center; gap:6px; color:#fff; text-decoration:none; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif; font-weight:600; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); padding:8px 14px; border-radius:10px; transition:.18s; white-space:nowrap; box-sizing:border-box; }
+  .back{ position:relative; z-index:60; flex:none; display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 16px; color:#fff; text-decoration:none; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif; font-weight:600; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); border-radius:10px; transition:background .18s, transform .18s; white-space:nowrap; box-sizing:border-box; }
   .back:hover{ background:rgba(255,255,255,.2); transform:translateY(-1px); }
   .wrap{ margin:14px 18px 56px; padding:0; position:relative; z-index:2; }
   /* 主体布局：左侧搜索栏竖排 + 右侧结果网格 */
@@ -244,7 +244,7 @@
     header.hero h1{ font-size:20px; }
     header.hero .brand-title{ font-size:20px; }
     .grid{ grid-template-columns:1fr; }
-    .back{ top:12px; right:12px; padding:7px 11px; font-size:12px; }
+    .back{ height:34px; padding:0 12px; font-size:12px; }
   }
 </style>
 </head>
