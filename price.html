@@ -45,7 +45,7 @@
   header.hero .brand-row{ display:flex; align-items:center; gap:10px; }
   header.hero .brand-title{ font-size:28px; margin:0; letter-spacing:1px; font-weight:700; color:#fff; white-space:nowrap; }
   header.hero p{ margin:8px 0 0; opacity:.9; font-size:13px; }
-  .back{ position:fixed; top:16px; right:16px; z-index:60; display:inline-flex; align-items:center; gap:6px; height:36px; color:#fff; text-decoration:none; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif; font-weight:600; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); padding:0 14px; border-radius:10px; transition:.18s; white-space:nowrap; box-sizing:border-box; }
+  .back{ position:fixed; top:16px; right:calc(16px - var(--sbw, 0px)); z-index:60; display:inline-flex; align-items:center; gap:6px; height:36px; color:#fff; text-decoration:none; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif; font-weight:600; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); padding:0 14px; border-radius:10px; transition:.18s; white-space:nowrap; box-sizing:border-box; }
   .back:hover{ background:rgba(255,255,255,.2); transform:translateY(-1px); }
   .wrap{ margin:14px 18px 56px; padding:0; position:relative; z-index:2; }
   /* 主体布局：左侧搜索栏竖排 + 右侧结果网格 */
@@ -244,9 +244,10 @@
     header.hero h1{ font-size:20px; }
     header.hero .brand-title{ font-size:20px; }
     .grid{ grid-template-columns:1fr; }
-    .back{ top:12px; right:12px; padding:7px 11px; font-size:12px; }
+    .back{ top:12px; right:calc(12px - var(--sbw, 0px)); padding:7px 11px; font-size:12px; }
   }
 </style>
+<script>;(function(){var d=document.documentElement;function u(){var w=window.innerWidth-d.clientWidth;d.style.setProperty('--sbw',(w>0?w:0)+'px');}u();window.addEventListener('resize',u);window.addEventListener('load',u);if(document.readyState!=='loading')u();})();</script>
 </head>
 <body>
 <header class="hero">
@@ -257,10 +258,10 @@
     </div>
     <div class="chinaclock" id="chinaclock"></div>
     <script>/* 首绘时钟避免刷新闪现；并锁定时钟宽度=logo 宽，使 (UTC+8) 对齐 logo 右侧（与主账号索引页一致）；仅 logo 加载完成后锁定，避免加载期宽度抖动 */(function(){function paint(){try{var d=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());var p=String(d).split(':');var h='<span class="seg">'+p[0]+'</span><span class="colon">:</span><span class="seg">'+p[1]+'</span><span class="colon">:</span><span class="seg">'+p[2]+'</span><span class="tz">(UTC+8)</span>';var el=document.getElementById('chinaclock');if(el)el.innerHTML=h;}catch(e){}}function lock(){var lg=document.querySelector('header.hero .brand-logo');var clk=document.getElementById('chinaclock');if(!lg||!clk)return;if(!lg.complete||!lg.naturalWidth)return;var w=lg.offsetWidth;if(w)clk.style.width=w+'px';}paint();lock();var lg=document.querySelector('header.hero .brand-logo');if(lg)lg.addEventListener('load',lock);window.addEventListener('load',lock);window.addEventListener('resize',lock);})();</script>
-  </div>
+    </div>
+  </header>
   <a class="back" href="index.html">← 返回综合索引</a>
-</header>
-<div class="wrap">
+  <div class="wrap">
   <div class="layout">
     <aside class="sidebar">
       <div class="search-panel">
