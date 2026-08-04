@@ -54,7 +54,7 @@
     --ink:#e2e8f0; --muted:#94a3b8; --line:rgba(255,255,255,.1); --accent:#38bdf8;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;height:100%; cursor:url('assets/cursors/LoLNormal.png') 3 2, auto; }
+  html,body{margin:0;height:100%; scrollbar-gutter:stable; cursor:url('assets/cursors/LoLNormal.png') 3 2, auto; }
   body{
     font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;
     color:var(--ink);
@@ -79,7 +79,7 @@
   header.top .sub{ color:var(--muted); font-size:12px; margin-left:6px; }
   header.top .spacer{ flex:1; }
   /* 返回按钮：对标产品价格页 .back 的格式/大小/位置（白字半透白底、顶栏右上角） */
-  .back{ position:fixed; top:16px; right:16px; z-index:60; display:inline-flex; align-items:center; gap:6px; color:#fff; text-decoration:none; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif; font-weight:600; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); padding:8px 14px; border-radius:10px; transition:.18s; white-space:nowrap; box-sizing:border-box; }
+  .back{ position:fixed; top:16px; right:16px; z-index:60; display:inline-flex; align-items:center; gap:6px; height:36px; color:#fff; text-decoration:none; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif; font-weight:600; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); padding:0 14px; border-radius:10px; transition:.18s; white-space:nowrap; box-sizing:border-box; }
   .back:hover{ background:rgba(255,255,255,.2); transform:translateY(-1px); }
 
   .layout{ flex:1; position:relative; }
