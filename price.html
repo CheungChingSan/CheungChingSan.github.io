@@ -45,9 +45,10 @@
   header.hero .brand-row{ display:flex; align-items:center; gap:10px; }
   header.hero .brand-title{ font-size:28px; margin:0; letter-spacing:1px; font-weight:700; color:#fff; white-space:nowrap; }
   header.hero p{ margin:8px 0 0; opacity:.9; font-size:13px; }
-  .back{ position:absolute; top:16px; right:16px; z-index:3; display:inline-flex; align-items:center; gap:6px;
-    font-size:13px; font-weight:600; color:#fff; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22);
-    padding:8px 14px; border-radius:10px; transition:.18s; }
+  .back{ position:fixed; top:16px; right:16px; z-index:25; display:inline-flex; align-items:center; gap:6px;
+    color:#fff; text-decoration:none; font-size:13px; font-family:inherit; font-weight:600;
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22);
+    padding:8px 14px; border-radius:10px; transition:.18s; white-space:nowrap; }
   .back:hover{ background:rgba(255,255,255,.2); transform:translateY(-1px); }
   .wrap{ margin:14px 18px 56px; padding:0; position:relative; z-index:2; }
   /* 主体布局：左侧搜索栏竖排 + 右侧结果网格 */
