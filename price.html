@@ -19,7 +19,7 @@
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif;
   }
   *{ box-sizing:border-box; }
-  html{ scroll-behavior:smooth; background:var(--bg); }
+  html{ scroll-behavior:smooth; scrollbar-gutter:stable; background:var(--bg); }
   body{ margin:0; padding-top:124px; min-height:100vh; color:var(--text);
     font-family:var(--font);
     line-height:1.6; background:
@@ -45,7 +45,7 @@
   header.hero .brand-row{ display:flex; align-items:center; gap:10px; }
   header.hero .brand-title{ font-size:28px; margin:0; letter-spacing:1px; font-weight:700; color:#fff; white-space:nowrap; }
   header.hero p{ margin:8px 0 0; opacity:.9; font-size:13px; }
-  .back{ position:fixed; top:16px; right:16px; z-index:60; display:inline-flex; align-items:center; gap:6px; color:#fff; text-decoration:none; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif; font-weight:600; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); padding:8px 14px; border-radius:10px; transition:.18s; white-space:nowrap; box-sizing:border-box; }
+  .back{ position:fixed; top:16px; right:16px; z-index:60; display:inline-flex; align-items:center; gap:6px; height:36px; color:#fff; text-decoration:none; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Roboto,Helvetica,Arial,sans-serif; font-weight:600; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); padding:0 14px; border-radius:10px; transition:.18s; white-space:nowrap; box-sizing:border-box; }
   .back:hover{ background:rgba(255,255,255,.2); transform:translateY(-1px); }
   .wrap{ margin:14px 18px 56px; padding:0; position:relative; z-index:2; }
   /* 主体布局：左侧搜索栏竖排 + 右侧结果网格 */
