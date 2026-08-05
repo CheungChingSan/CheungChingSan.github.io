@@ -201,6 +201,7 @@ function render(){
     const b = fmtBeds(d);
     let tier = d.beds===null ? '床位数未公开' : (d.beds>=500?'第一梯队 · 500床以上' : d.beds>=350?'第二梯队 · 350–499床' : d.beds>=250?'第三梯队 · 250–349床' : '第四梯队 · 250床以下');
     if((mode==='beds'||mode==='bedsAsc') && tier!==lastTier){
+      if(lastTier!==null) html += '</div>'; // 切换梯队前先关闭上一个 grid，避免嵌套错乱
       html += `<div class="tier-title">${tier}</div><div class="grid">`;
       lastTier = tier;
     }
