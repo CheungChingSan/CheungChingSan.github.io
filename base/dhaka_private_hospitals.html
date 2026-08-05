@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>孟加拉·达卡私立医院一览（按规模排序）</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    background: linear-gradient(180deg, #f4f8fc 0%, #eef3f9 100%);
+    color: #1f2d3d;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 18px 60px; }
+  header.hero {
+    background: linear-gradient(120deg, #0b5cab 0%, #1577d6 60%, #2a9bd6 100%);
+    color: #fff;
+    border-radius: 18px;
+    padding: 28px 26px;
+    box-shadow: 0 14px 40px rgba(11,92,171,.25);
+  }
+  header.hero h1 { margin: 0 0 6px; font-size: 25px; letter-spacing: .5px; }
+  header.hero p { margin: 4px 0; opacity: .92; font-size: 14px; }
+  .search-box {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin: 22px 0 14px;
+    background: #fff;
+    border: 1px solid #e1e8f0;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 6px 18px rgba(20,50,90,.06);
+  }
+  .search-box .ic { font-size: 18px; }
+  .search-box input[type=text] {
+    flex: 1 1 260px; min-width: 200px;
+    border: 1.5px solid #cdd9e6; border-radius: 10px;
+    padding: 10px 12px; font-size: 15px; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .search-box input[type=text]:focus {
+    border-color: #1577d6;
+    box-shadow: 0 0 0 3px rgba(21,119,214,.15);
+  }
+  .search-box select {
+    border: 1.5px solid #cdd9e6; border-radius: 10px;
+    padding: 10px 12px; font-size: 14px; background: #fff; cursor: pointer;
+  }
+  .search-box .clear {
+    border: none; background: #1577d6; color: #fff;
+    border-radius: 10px; padding: 10px 16px; font-size: 14px; cursor: pointer;
+    transition: background .2s;
+  }
+  .search-box .clear:hover { background: #0b5cab; }
+  .count { font-size: 13px; color: #5a6b7d; margin: 0 0 12px 4px; }
+  .count b { color: #0b5cab; }
+
+  .tier-title {
+    margin: 22px 4px 10px; font-size: 16px; font-weight: 700; color: #0b5cab;
+    border-left: 4px solid #1577d6; padding-left: 10px;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .card {
+    background: #fff; border: 1px solid #e6edf4; border-radius: 14px;
+    padding: 16px 16px 14px; box-shadow: 0 4px 14px rgba(20,50,90,.05);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(20,50,90,.12); }
+  .card .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .card .name { font-size: 16px; font-weight: 700; color: #16263a; }
+  .card .cn { font-size: 12.5px; color: #6b7c8e; margin-top: 2px; }
+  .card .rank {
+    flex: 0 0 auto; background: #eaf3ff; color: #0b5cab; font-weight: 700;
+    border-radius: 10px; padding: 4px 10px; font-size: 13px; white-space: nowrap;
+  }
+  .card .beds {
+    display: inline-block; margin: 10px 0 8px; font-size: 13px;
+    background: #fff4e0; color: #a35a00; border: 1px solid #ffe1b0;
+    border-radius: 8px; padding: 3px 9px; font-weight: 600;
+  }
+  .card .beds.unknown { background: #f1f3f6; color: #6b7c8e; border-color: #e1e6ec; }
+  .rows { font-size: 13px; color: #34465a; }
+  .rows div { margin: 3px 0; }
+  .rows .label { color: #8a99a8; display: inline-block; min-width: 52px; }
+  .rows a { color: #1577d6; text-decoration: none; word-break: break-all; }
+  .rows a:hover { text-decoration: underline; }
+  .tag {
+    display: inline-block; font-size: 11.5px; border-radius: 6px; padding: 2px 8px;
+    margin-right: 6px; margin-top: 6px;
+  }
+  .tag.priv { background: #e7f6ec; color: #1f8a4c; border: 1px solid #bfe8cd; }
+  .tag.trust { background: #eef0ff; color: #4459c9; border: 1px solid #cdd2f7; }
+  .tag.found { background: #fff0e8; color: #b5581a; border: 1px solid #ffd6bf; }
+  .tag.note { background: #f3f5f8; color: #5a6b7d; border: 1px solid #e1e6ec; }
+  .empty { text-align: center; color: #8a99a8; padding: 40px; font-size: 15px; }
+  .src { font-size: 11.5px; color: #97a4b2; margin-top: 8px; }
+  .src a { color: #97a4b2; }
+  footer { margin-top: 36px; font-size: 12px; color: #8090a0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>孟加拉·达卡市私立医院一览</h1>
+    <p>按规模（住院床位数）由大到小排序 · 数据截至 2026-08-05</p>
+    <p>面向医疗器械外贸（电刀 / 高频手术设备）终端采购方情报</p>
+  </header>
+
+  <div class="search-box">
+    <span class="ic">🔍</span>
+    <input type="text" id="q" placeholder="搜索：医院名称 / 区域 / 电话 / 官网 / 性质…">
+    <select id="sort">
+      <option value="beds">排序：规模（床位）由大到小</option>
+      <option value="bedsAsc">排序：规模（床位）由小到大</option>
+      <option value="name">排序：名称 A→Z</option>
+    </select>
+    <button class="clear" id="clear">清除</button>
+  </div>
+  <div class="count" id="count"></div>
+
+  <div id="out"></div>
+
+  <footer>
+    数据来源：各医院官方网站（squarehospital.com / uhlbd.com / akmmc.edu.bd / holyfamily.com.bd / asgaralihospital.com / brbhospital.com 等）及公开医疗目录（prothomblog / bearmybrand / medisolve / myhospitalnow / ipdibd / dscc.gov.bd）。
+    床位数以各院最新公开口径为准，可能随扩建变动。未知字段标注「未公开」，未做任何推测填充。
+  </footer>
+</div>
+
+<script>
+const DATA = [
+  { name:"Anwer Khan Modern Medical College Hospital", cn:"安瓦尔·汗现代医院（Modern Group）", beds:750, area:"Dhanmondi", address:"House 17 & 17/1, Road 8, Dhanmondi, Dhaka-1205", phone:"09678010652", web:"https://akmmch.com", own:"私立", ownType:"priv", src:"https://akmmc.edu.bd/hospital", srcName:"akmmc.edu.bd", note:"750床，Modern Group 旗下教学医院，2008年成立" },
+  { name:"Holy Family Red Crescent Medical College Hospital", cn:"圣家红新月会医院（非营利）", beds:750, area:"Ramna / Eskaton", address:"1, Eskatan Garden Road, Ramna, Dhaka-1000", phone:"+8802-41031875 / 01716346930", web:"https://holyfamily.com.bd", own:"私立/非营利(红新月会)", ownType:"found", src:"https://www.holyfamily.com.bd/about/about-us", srcName:"holyfamily.com.bd", note:"官方称床位750（运营约528）；1953年建，达卡老牌私立教学医院" },
+  { name:"Square Hospitals Limited", cn:"Square 医院（Square Group）", beds:500, area:"Panthapath", address:"18/F, Bir Uttam Qazi Nuruzzaman Sarak, West Panthapath, Dhaka-1205", phone:"10616 / +8802-8159457", web:"https://squarehospital.com", own:"私立", ownType:"priv", src:"https://www.squarehospital.com/page/24/about-hospital", srcName:"squarehospital.com", note:"500床，JCI认证，2006年成立，上市公司关联" },
+  { name:"United Hospital Limited", cn:"联合医院", beds:500, area:"Gulshan", address:"Plot 15, Road 71, Gulshan-2, Dhaka-1212", phone:"10666 / +8802-8836444", web:"https://uhlbd.com", own:"私立", ownType:"priv", src:"https://www.bangladeshexpats.com/living-in-bangladesh/health-and-fitness", srcName:"bangladeshexpats.com", note:"500床，2006年开业，临 Gulshan 湖，11间手术室" },
+  { name:"Shahabuddin Medical College & Hospital", cn:"沙哈布丁医院", beds:500, area:"Gulshan", address:"House 15 & 16, Road 13/A, Gulshan-2, Dhaka-1212", phone:"未公开", web:"https://shahabuddinmedical.org", own:"私立", ownType:"priv", src:"http://shahabuddinmedical.org/hospital", srcName:"shahabuddinmedical.org", note:"官网称500床；国际标准化综合医疗" },
+  { name:"Evercare Hospital Dhaka", cn:"Evercare 医院（原 Apollo 阿波罗）", beds:425, area:"Bashundhara", address:"Plot 81, Block E, Bashundhara R/A, Dhaka-1229", phone:"10678 / +8802-8431661", web:"https://evercare.org", own:"私立", ownType:"priv", src:"https://bearmybrand.com/blog/best-kidney-hospital-in-bangladesh", srcName:"bearmybrand.com", note:"原阿波罗医院，2020年更名；JCI认证，425–450床" },
+  { name:"Asgar Ali Hospital", cn:"阿斯加尔·阿里医院（City Group）", beds:350, area:"Gandaria", address:"111/1/A Distillery Road, Gandaria, Dhaka-1204", phone:"10602 / +8802-47443135", web:"https://asgaralihospital.com", own:"私立", ownType:"priv", src:"https://www.asgaralihospital.com/page/who-we-are", srcName:"asgaralihospital.com", note:"350床，City Group 旗下；规划扩建至800床" },
+  { name:"BRB Hospitals Limited", cn:"BRB 医院", beds:350, area:"Panthapath", address:"77 Panthapath, Dhaka-1215", phone:"10647", web:"https://brbhospital.com", own:"私立", ownType:"priv", src:"http://brbhospital.com/", srcName:"brbhospital.com", note:"官网称350床（一说308）；AACI认证，5大卓越中心" },
+  { name:"Green Life Hospital Ltd.", cn:"绿色生命医院（非营利）", beds:500, area:"Green Road", address:"MAK Khan Tower, 31 & 31/1, Bir Uttam K.M. Shafiullah Sarak, Green Road, Dhaka-1205", phone:"+8802-9612345", web:"https://greenlife.edu.bd", own:"私立/非营利", ownType:"found", src:"https://www.medisolve.com.bd/single-blog/Top-10-Private-Hospitals-in-Bangladesh-A-Comprehensive-Profile", srcName:"medisolve.com.bd", note:"床位数来源分歧：medisolve 称约500，myhospitalnow 称约150，取高值并标注" },
+  { name:"National Heart Foundation Hospital & Research Institute", cn:"国家心脏基金会医院（心脏病专科）", beds:330, area:"Mohakhali", address:"National Heart Foundation, Mohakhali, Dhaka", phone:"+8802-58054708", web:"https://nhfbd.org", own:"基金会(半私立)", ownType:"found", src:"https://prothomblog.com/largest-hospitals-in-dhaka", srcName:"prothomblog.com", note:"330床，心脏病专科（开心/闭心手术），基金会运营" },
+  { name:"Bangladesh Specialized Hospital (BSH)", cn:"孟加拉专科医院", beds:250, area:"Shyamoli", address:"21 Shyamoli, Mirpur Road, Dhaka-1207", phone:"096667000100", web:"https://bdspecializedhospital.com", own:"私立", ownType:"priv", src:"https://www.myhospitalnow.com/hospitals/bangladesh-specialized-hospital", srcName:"myhospitalnow.com", note:"床位数来源分歧：myhospitalnow 称350，boxiew 称250，取低值并标注；NABH/CAP认证" },
+  { name:"LABAID Specialized Hospital", cn:"LABAID 专科医院（Labaid Group）", beds:250, area:"Dhanmondi", address:"House 06, Road 04, Dhanmondi, Dhaka-1205", phone:"09666710606", web:"https://labaidhospital.com", own:"私立", ownType:"priv", src:"https://prothomblog.com/largest-hospitals-in-dhaka", srcName:"prothomblog.com", note:"250–300床（来源分歧），心脏病/肿瘤/骨科强项" },
+  { name:"Ibn Sina Specialized Hospital", cn:"伊本·西纳医院（Ibn Sina Trust）", beds:250, area:"Dhanmondi / Mirpur", address:"House 68, Road 15/A, Dhanmondi, Dhaka-1209", phone:"10615 / +8802-9106620", web:"https://ibnsinatrust.com", own:"信托(非营利)", ownType:"trust", src:"https://www.medisolve.com.bd/single-blog/Top-10-Private-Hospitals-in-Bangladesh-A-Comprehensive-Profile", srcName:"medisolve.com.bd", note:"250床，Ibn Sina Trust 运营，诊断/外科平价" },
+  { name:"Impulse Hospital", cn:"Impulse 医院", beds:null, area:"Dhanmondi", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://doctorshomebd.com/private-clinic-and-hospitals-list-in-dhaka/", srcName:"doctorshomebd.com", note:"床位数未公开" },
+  { name:"Aysha Memorial Specialized Hospital", cn:"阿伊莎纪念专科医院", beds:null, area:"Mohakhali", address:"74/G, Arjatpara, Mohakhali, Dhaka", phone:"01841-480000", web:"未公开", own:"私立", ownType:"priv", src:"https://ipdibd.com/hospital-list-bangladesh/private-hospital-list", srcName:"ipdibd.com", note:"床位数未公开" },
+  { name:"Popular Medical Centre / Popular Diagnostic", cn:"大众医疗中心", beds:null, area:"Dhanmondi / Badda / Savar", address:"多分支（Dhanmondi 等）", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://doctorshomebd.com/private-clinic-and-hospitals-list-in-dhaka/", srcName:"doctorshomebd.com", note:"连锁诊所/诊断中心，床位数未公开" },
+  { name:"Bangladesh Medical College Hospital", cn:"孟加拉医学院医院", beds:null, area:"Dhanmondi", address:"House 35, Road 14/A, Dhanmondi, Dhaka", phone:"+8802-44812101", web:"未公开", own:"私立", ownType:"priv", src:"https://ipdibd.com/hospital-list-bangladesh/private-hospital-list", srcName:"ipdibd.com", note:"床位数未公开" },
+  { name:"Dhaka Central Hospital Limited", cn:"达卡中心医院", beds:null, area:"Shyamoli", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://doctorshomebd.com/private-clinic-and-hospitals-list-in-dhaka/", srcName:"doctorshomebd.com", note:"床位数未公开" },
+  { name:"Aalok Healthcare & Hospital Ltd.", cn:"Aalok 医疗医院", beds:null, area:"Dhanmondi", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://doctorshomebd.com/private-clinic-and-hospitals-list-in-dhaka/", srcName:"doctorshomebd.com", note:"床位数未公开" },
+  { name:"Khidmah Hospital Private Limited", cn:"Khidmah 医院", beds:null, area:"Khilgaon", address:"C-287/2-3, Khilgaon Bishwa Road, Dhaka-1219", phone:"09606063030", web:"https://khidmahhospital.com", own:"私立", ownType:"priv", src:"https://www.bdtradeinfo.com/492/hospital/all/c/a", srcName:"bdtradeinfo.com", note:"床位数未公开" },
+  { name:"Metropolitan Medical Centre (MMCL)", cn:"大都会医疗中心", beds:null, area:"Dhanmondi", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://ambulancebd24.com/private-hospitals-in-dhaka/", srcName:"ambulancebd24.com", note:"床位数未公开" },
+  { name:"Care Medical College Hospital", cn:"Care 医学院医院", beds:null, area:"Shantinagar", address:"41, Chamelibagh, Shantinagar, Dhaka", phone:"09677223344", web:"未公开", own:"私立", ownType:"priv", src:"https://ipdibd.com/hospital-list-bangladesh/private-hospital-list", srcName:"ipdibd.com", note:"床位数未公开" },
+  { name:"Northern International Medical College & Hospital", cn:"北方国际医学院医院", beds:null, area:"Dhanmondi", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://doctorshomebd.com/private-clinic-and-hospitals-list-in-dhaka/", srcName:"doctorshomebd.com", note:"床位数未公开" },
+  { name:"Ashiyan Medical College & Hospital", cn:"Ashiyan 医学院医院", beds:null, area:"Dhanmondi", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://doctorshomebd.com/private-clinic-and-hospitals-list-in-dhaka/", srcName:"doctorshomebd.com", note:"床位数未公开" },
+  { name:"Japan Bangladesh Friendship Hospital", cn:"日孟友谊医院", beds:null, area:"Dhanmondi", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://doctorshomebd.com/private-clinic-and-hospitals-list-in-dhaka/", srcName:"doctorshomebd.com", note:"床位数未公开" },
+  { name:"M H Samorita Hospital & Medical College", cn:"M H Samorita 医院", beds:null, area:"Dhanmondi", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://doctorshomebd.com/private-clinic-and-hospitals-list-in-dhaka/", srcName:"doctorshomebd.com", note:"床位数未公开" },
+  { name:"Bashundhara Medical Center", cn:"Bashundhara 医疗中心", beds:100, area:"Dhanmondi", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://www.myhospitalnow.com/blog/the-top-20-best-hospitals-in-bangladesh", srcName:"myhospitalnow.com", note:"约100+床（来源标注100+）" },
+  { name:"Mediheal Hospital", cn:"Mediheal 医院", beds:100, area:"Dhanmondi", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://www.myhospitalnow.com/blog/the-top-20-best-hospitals-in-bangladesh", srcName:"myhospitalnow.com", note:"约100+床（来源标注100+）" },
+  { name:"Shaheed Monsur Ali Medical College & Hospital", cn:"沙希德·蒙苏尔·阿里医院", beds:null, area:"Uttara", address:"未公开", phone:"未公开", web:"未公开", own:"私立", ownType:"priv", src:"https://doctorshomebd.com/private-clinic-and-hospitals-list-in-dhaka/", srcName:"doctorshomebd.com", note:"床位数未公开" },
+  { name:"Z.H. Sikder Women's College & Hospital", cn:"Z.H. Sikder 妇女医院", beds:null, area:"Dhanmondi", address:"Monica Estate, West side of Dhanmondi, Dhaka", phone:"01313752222", web:"未公开", own:"私立", ownType:"priv", src:"https://ipdibd.com/hospital-list-bangladesh/private-hospital-list", srcName:"ipdibd.com", note:"妇产专科，床位数未公开" }
+];
+
+const out = document.getElementById('out');
+const qEl = document.getElementById('q');
+const sortEl = document.getElementById('sort');
+const countEl = document.getElementById('count');
+
+function fmtBeds(d){
+  if(d.beds===null) return {text:"未公开", unknown:true};
+  return {text:d.beds+" 床", unknown:false};
+}
+
+function render(){
+  const q = qEl.value.trim().toLowerCase();
+  let list = DATA.filter(d=>{
+    if(!q) return true;
+    const hay = [d.name, d.cn, d.area, d.phone, d.web, d.own, d.note].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+  const mode = sortEl.value;
+  list.sort((a,b)=>{
+    if(mode==='name') return a.name.localeCompare(b.name);
+    const av = a.beds===null?-1:a.beds;
+    const bv = b.beds===null?-1:b.beds;
+    if(mode==='bedsAsc') return av-bv;
+    return bv-av; // 默认 beds desc
+  });
+
+  countEl.innerHTML = `共匹配 <b>${list.length}</b> 家医院 / 全表 ${DATA.length} 家`;
+
+  if(list.length===0){
+    out.innerHTML = '<div class="empty">没有匹配的医院，试试别的关键词。</div>';
+    return;
+  }
+
+  // 分组标题（仅默认/规模排序时显示梯队）
+  let html = '';
+  let lastTier = null;
+  list.forEach((d,i)=>{
+    const b = fmtBeds(d);
+    let tier = d.beds===null ? '床位数未公开' : (d.beds>=500?'第一梯队 · 500床以上' : d.beds>=350?'第二梯队 · 350–499床' : d.beds>=250?'第三梯队 · 250–349床' : '第四梯队 · 250床以下');
+    if((mode==='beds'||mode==='bedsAsc') && tier!==lastTier){
+      html += `<div class="tier-title">${tier}</div><div class="grid">`;
+      lastTier = tier;
+    }
+    const rank = (mode==='beds'||mode==='bedsAsc') ? (i+1) : '';
+    html += `
+      <div class="card">
+        <div class="top">
+          <div>
+            <div class="name">${d.name}</div>
+            <div class="cn">${d.cn}</div>
+          </div>
+          ${rank?`<div class="rank">#${rank}</div>`:''}
+        </div>
+        <span class="beds ${b.unknown?'unknown':''}">${b.text}</span>
+        <div class="rows">
+          <div><span class="label">区域</span>${d.area}</div>
+          <div><span class="label">地址</span>${d.address}</div>
+          <div><span class="label">电话</span>${d.phone}</div>
+          <div><span class="label">官网</span>${d.web==='未公开'?'未公开':`<a href="${d.web}" target="_blank" rel="noopener">${d.web}</a>`}</div>
+        </div>
+        <div>
+          <span class="tag ${d.ownType}">${d.own}</span>
+        </div>
+        <div class="src">来源：<a href="${d.src}" target="_blank" rel="noopener">${d.srcName}</a> ｜ ${d.note}</div>
+      </div>`;
+  });
+  // 关闭最后一个 grid（当按规模排序时）
+  if(mode==='beds'||mode==='bedsAsc') html += '</div>';
+  out.innerHTML = html;
+}
+
+qEl.addEventListener('input', render);
+sortEl.addEventListener('change', render);
+document.getElementById('clear').addEventListener('click', ()=>{ qEl.value=''; render(); qEl.focus(); });
+render();
+</script>
+</body>
+</html>
