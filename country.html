@@ -102,7 +102,7 @@
   }
   /* 功能按钮条：地图窗口顶部独立区域，普通流布局，不覆盖地图 */
   .map-toolbar{
-    flex:none; height:46px; display:flex; align-items:center; gap:8px; padding:0 12px;
+    flex:none; min-height:46px; display:flex; flex-wrap:wrap; align-items:center; align-content:flex-start; gap:8px; padding:6px 12px;
     border-bottom:1px solid var(--line); background:rgba(10,18,32,.55);
   }
   .map-toolbar button{
@@ -124,6 +124,10 @@
     backdrop-filter:blur(14px); box-shadow:0 14px 34px rgba(0,0,0,.45);
   }
   .tb-group.open .tb-menu{ display:flex; }
+  /* 独立按钮分隔线：把[开启多点追踪]/[开启静态锁图]与下拉分组明确隔开，强调它们是顶层独立按钮 */
+  .tb-sep{ width:1px; height:22px; background:var(--line); margin:0 4px; flex:none; }
+  /* 顶层独立按钮：禁止被 flex 压缩，避免窄屏下被裁切而「看起来没独立显示」 */
+  .map-toolbar button.tb-standalone{ flex:none; }
   .tb-menu button{
     white-space:nowrap; text-align:left; justify-content:flex-start; padding:7px 11px; margin:0;
     border:1px solid transparent; border-radius:8px; background:transparent; color:var(--txt); font-size:12px;
@@ -393,8 +397,9 @@
             <button id="routelist">路线规划清单</button>
           </div>
         </div>
-        <button id="multitrack">开启多点追踪</button>
-        <button id="staticlock">开启静态锁图</button>
+        <span class="tb-sep" aria-hidden="true"></span>
+        <button id="multitrack" class="tb-standalone">开启多点追踪</button>
+        <button id="staticlock" class="tb-standalone">开启静态锁图</button>
       </div>
       <div id="map"><div id="depotOverlay" style="display:none;position:absolute;inset:0;z-index:4;cursor:crosshair"></div></div>
       <div id="inset" class="map-inset" style="display:none;"></div>
@@ -450,6 +455,6 @@
   <script defer src="d3.v7.min.js"></script>
   <script defer src="topojson-client.min.js"></script>
   <script defer src="country_meta.js"></script>
-  <script defer src="app.js?v=202608061309"></script>
+  <script defer src="app.js?v=202608061345"></script>
 </body>
 </html>
