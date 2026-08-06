@@ -214,6 +214,14 @@
   .prov-line.prov-sel{ stroke:#f59e0b !important; stroke-width:2.4 !important; }
   .adm2.adm2-sel{ stroke:#f59e0b !important; stroke-width:1.5 !important; stroke-dasharray:none !important; opacity:1 !important; }
   .cust-hint{ font-size:11.5px; color:var(--teal); background:rgba(13,148,136,.12); border:1px solid rgba(13,148,136,.3); border-radius:8px; padding:7px 10px; margin-bottom:10px; line-height:1.5; }
+  /* 客户检索 / 医院检索 标签切换 */
+  .tabbar{ display:flex; gap:6px; margin-bottom:10px; }
+  .tab{ flex:1; padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--muted); font-size:13px; font-weight:600; cursor:url('assets/cursors/LoLHover.png') 1 2, pointer; transition:.18s; }
+  .tab:hover{ border-color:var(--accent); color:#fff; }
+  .tab.active{ background:rgba(56,189,248,.30); border-color:var(--accent); color:#fff; }
+  /* 医院红点（圆内红十字）选中高亮：白底红框 → 琥珀底，红十字仍清晰 */
+  .hosp-pt-g.hosp-hl circle.hosp-pt{ fill:#f59e0b !important; stroke:#fbbf24 !important; }
+  #hospHint.cust-hint{ color:#fca5a5; background:rgba(220,38,38,.12); border-color:rgba(220,38,38,.3); }
   .cust-table-wrap{ max-height:420px; overflow:auto; border-radius:10px; border:1px solid var(--line); }
   .cust-table{ width:100%; border-collapse:collapse; font-size:12px; }
   .cust-table th, .cust-table td{ padding:8px 10px; text-align:left; border-bottom:1px solid rgba(255,255,255,.06); vertical-align:top; }
@@ -350,6 +358,7 @@
       <div class="map-toolbar">
         <button id="adm2toggle">显示二级行政区域</button>
         <button id="custtoggle" class="active">隐藏客户位点</button>
+        <button id="hosptoggle" class="active">隐藏医院位点</button>
         <button id="multitrack">开启多点追踪</button>
         <button id="staticlock">开启静态锁图</button>
         <button id="hideunsel">隐藏未选客户</button>
@@ -381,13 +390,23 @@
 
     <aside class="custbar">
       <section class="card">
-        <h3>客户检索（<span id="custCountry">—</span>）</h3>
+        <div class="tabbar">
+          <button id="tabCust" class="tab active">客户检索</button>
+          <button id="tabHosp" class="tab">医院检索</button>
+        </div>
+        <div id="custCountryWrap">
+          <h3>客户检索（<span id="custCountry">—</span>）</h3>
+        </div>
+        <div id="hospCountryWrap" style="display:none">
+          <h3>达卡市医院（<span id="hospCount">—</span>）</h3>
+        </div>
         <input id="custSearch" class="search" placeholder="搜索 公司 / 电话 / 姓名 / 地址…">
         <div id="custCount" class="cust-count"></div>
-        <div class="cust-hint">🟢 地图上绿色圆点 = 按客户实际地址落点的分布（无地址者仅列于下方表格）</div>
+        <div id="custHint" class="cust-hint">🟢 地图上绿色圆点 = 按客户实际地址落点的分布（无地址者仅列于下方表格）</div>
+        <div id="hospHint" class="cust-hint" style="display:none">🏥 医院红点（圆内红十字）= 达卡市私立医院分布；点击可在地图定位</div>
         <div class="cust-table-wrap">
           <table class="cust-table">
-            <thead><tr><th>公司</th><th>电话</th><th>联系人</th><th>地址</th></tr></thead>
+            <thead id="custHead"><tr><th>公司</th><th>电话</th><th>联系人</th><th>地址</th></tr></thead>
             <tbody id="custBody"></tbody>
           </table>
         </div>
@@ -401,6 +420,6 @@
   <script defer src="d3.v7.min.js"></script>
   <script defer src="topojson-client.min.js"></script>
   <script defer src="country_meta.js"></script>
-  <script defer src="app.js?v=202607281537"></script>
+  <script defer src="app.js?v=202608061013"></script>
 </body>
 </html>
