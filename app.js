@@ -223,12 +223,12 @@ window.addEventListener("unhandledrejection", function(e){
   let _gRoute = null;            // 路线图层（置于 zoom 组 g 内、客户点之下，随地图同步变换）
   let _gDepot = null, _depotInner = null;  // 路线起点红旗图层 / 内部缩放抵消组
   let _depot = null;             // 用户选取的路线出发点 {geo:[lng,lat]}
-  let _selectDepotMode = false;  // 是否正在“选取计划位置”
+  let _selectDepotMode = false;  // 是否正在“设立出发点位”
   let _routePts = [];            // 当前参与路线的客户点（_custEls 元素快照）
   let _routeOrder = [];         // 闭合访问顺序（_routePts 下标数组；含 depot 时 depot 在顺序中排首位/末位）
   let _routeMode = 'tsp';       // 🔴 路线规划铁律：绘制的闭合路线「无论如何都是最短路径」（Closed TSP），不可改为其它顺序
   let _listMode = 'ccw';        // 清单名单阅读方向（仅控制名单遍历方向，不改绘制路线）：'ccw'=沿最短路线正向（默认）；'cw'=沿最短路线反向。🔴 清单顺序恒等于绘制路线实际途径顺序（复用 _routeOrder），不再用空间环形，确保「清单=路线途径顺序」
-  let _routeListOpen = false;   // 路线规划清单弹窗是否打开
+  let _routeListOpen = false;   // 路线轨迹清单弹窗是否打开
   let _routeSig = null;         // 可见点集签名：点集不变则复用已算顺序，避免每次选中都重跑 TSP（防卡）
   let _lastAdm2Feat = null, _lastAdm2Prov = null;   // ADM2 悬停省归属缓存：仅要素改变时重算 provinceAt
   let _saveT = null;              // 单点模式：点击客户行前的地图 transform（取消选中时恢复，相当于"返回"）
@@ -483,11 +483,11 @@ window.addEventListener("unhandledrejection", function(e){
         if (_routeOn || _depot){                                               // 关闭路线规划 + 清除出发点红旗
           _routeOn = false;
           if (_gRoute){ _gRoute.selectAll('*').remove(); _gRoute.style('display', 'none'); }
-          const rp = $('routeplan'); if (rp){ rp.classList.remove('active'); rp.textContent = '开启路线规划'; }
+          const rp = $('routeplan'); if (rp){ rp.classList.remove('active'); rp.textContent = '描绘路线轨迹'; }
         }
         if (_selectDepotMode || _depot){                                       // 退出选点模式 + 清除红旗
           _selectDepotMode = false;
-          const sd = $('selectDepot'); if (sd){ sd.classList.remove('active'); sd.textContent = '选取计划位置'; }
+          const sd = $('selectDepot'); if (sd){ sd.classList.remove('active'); sd.textContent = '设立出发点位'; }
           const ov = $('depotOverlay'); if (ov) ov.style.display = 'none';
           _depot = null; drawDepotMarker();
         }
@@ -570,12 +570,12 @@ window.addEventListener("unhandledrejection", function(e){
         this.classList.toggle('active', _hideUnselectedHosp);
         applyHideUnselectedHosp();
       };
-      // [选取计划位置]：进入选点模式 → 用户在地图上点击任意位置生成一面小红旗，作为路线规划的固定出发点与返回点
+      // [设立出发点位]：进入选点模式 → 用户在地图上点击任意位置生成一面小红旗，作为路线轨迹的固定出发点与返回点
       function setSelectDepotMode(active){
         _selectDepotMode = active;
         const btn = $('selectDepot');
         const overlay = $('depotOverlay');
-        if (btn){ btn.classList.toggle('active', active); btn.textContent = active ? '放置位置坐标' : (_depot ? '重新选取位置' : '选取计划位置'); }
+        if (btn){ btn.classList.toggle('active', active); btn.textContent = active ? '放置出发坐标' : (_depot ? '重新设立点位' : '设立出发点位'); }
         if (overlay) overlay.style.display = active ? 'block' : 'none';
       }
       function placeDepot(e){
@@ -602,21 +602,21 @@ window.addEventListener("unhandledrejection", function(e){
         setSelectDepotMode(!_selectDepotMode);
       };
       if ($('depotOverlay')) $('depotOverlay').onclick = placeDepot;
-      // [开启/关闭路线规划]：默认关闭。开启 → 按可见客户点 + 红旗（如有）的实际位置，用虚线连成一条闭合最短路线（TSP）
+      // [描绘/关闭路线轨迹]：默认关闭。开启 → 按可见客户点 + 红旗（如有）的实际位置，用虚线连成一条闭合最短路线（TSP）
       $('routeplan').onclick = function(){
         _routeOn = !_routeOn;
         this.classList.toggle('active', _routeOn);
-        this.textContent = _routeOn ? '关闭路线规划' : '开启路线规划';
+        this.textContent = _routeOn ? '关闭路线轨迹' : '描绘路线轨迹';
         rebuildRoute();   // 重算点集 + 顺序 + 绘制（_gRoute 图层在 rebuildRoute 内自愈，归属当前 zoom 组 g）
         if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
       };
-      // [路线规划清单]：弹出小窗口，按当前路线顺序罗列 起点 → 各客户 → 回到起点
+      // [路线轨迹清单]：弹出小窗口，按当前路线顺序罗列 起点 → 各客户 → 回到起点
       // 修复：清单按钮应「读取并自动开启路线规划」——若路线规划未开，先开启（与 routeplan 同款逻辑）再弹窗，避免清单读到空态
       if ($('routelist')) $('routelist').onclick = function(){
         if (!_routeOn){
           _routeOn = true;
           const rp = $('routeplan');
-          if (rp){ rp.classList.add('active'); rp.textContent = '关闭路线规划'; }
+          if (rp){ rp.classList.add('active'); rp.textContent = '关闭路线轨迹'; }
           rebuildRoute();   // 重算点集 + 顺序 + 绘制
           if (_gRoute) _gRoute.style('display', _custVisible ? null : 'none');
         }
@@ -2168,9 +2168,9 @@ window.addEventListener("unhandledrejection", function(e){
       const title = $('routeListTitle');
       const hasDepot = !!_depot;
       const totalNodes = _routePts.length + (hasDepot ? 1 : 0);
-      if (title) title.textContent = `路线规划清单（${_routePts.length} 个站点${hasDepot ? ' · 含计划起点' : ''}）`;
+      if (title) title.textContent = `路线轨迹清单（${_routePts.length} 个站点${hasDepot ? ' · 含计划起点' : ''}）`;
       if (!_routeOn || totalNodes < 2){
-        body.innerHTML = '<li class="rl-empty">尚未生成路线 — 请点击「开启路线规划」后查看顺序名单。</li>';
+        body.innerHTML = '<li class="rl-empty">尚未生成路线 — 请点击「描绘路线轨迹」后查看顺序名单。</li>';
         return;
       }
       const seq = routeListSeq();
