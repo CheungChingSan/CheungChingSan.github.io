@@ -423,7 +423,8 @@ window.addEventListener("unhandledrejection", function(e){
             selVisible = selEl ? (selEl.style.display !== 'none') : null;
             otherHidden = otherEl ? (otherEl.style.display === 'none') : null;
           }
-          return { visible:_custVisible, hideUnselected:_hideUnselected, custToggleActive: !!(ct&&ct.classList.contains('active')), hideunselActive: !!(hu&&hu.classList.contains('active')), custPoints:_custEls.length, selVisible, otherHidden };
+          const rowsHidden = Array.from(document.querySelectorAll('.cust-table tbody tr[data-id]')).filter(tr => tr.style.display === 'none').length;
+          return { visible:_custVisible, hideUnselected:_hideUnselected, custToggleActive: !!(ct&&ct.classList.contains('active')), hideunselActive: !!(hu&&hu.classList.contains('active')), custPoints:_custEls.length, selVisible, otherHidden, selCount:_hlIds.size, rowsHidden };
         }
       };
 
@@ -584,6 +585,11 @@ window.addEventListener("unhandledrejection", function(e){
       $('hideunsel').onclick = function(){
         _hideUnselected = !_hideUnselected;
         this.classList.toggle('active', _hideUnselected);
+        if (_hideUnselected && !_custVisible){   // 关全部点位后进入「保留已选客户」→ 自动点亮客户图层，仅显示已选点（否则点位仍 hidden）
+          _custVisible = true;
+          const ct = $('custtoggle'); if (ct) ct.classList.add('active');
+          if (_gCust) _gCust.style('display', null);
+        }
         applyHideUnselected();
       };
       // [未选医院]：默认关闭。开启 → 仅显示已选中(高亮)医院，隐藏其余所有红点
@@ -2335,8 +2341,10 @@ window.addEventListener("unhandledrejection", function(e){
     function highlightCustomer(id, opts){
       opts = opts || {};
       const doZoom = (opts.doZoom !== false);   // 默认 true：点击检索行 / 世界地图跳转时自动放大定位；点击地图黄点传 false（仅高亮+滚动，不强制放大）
-      // 关闭「所有客户位点」后点击信息行：不应恢复全部，应进入「保留已选客户」模式——仅显示该行点位（其余由下方 applyHideUnselected 隐藏）
-      if (!_custVisible && _gCust){ _hideUnselected = true; const hu=$('hideunsel'); if(hu) hu.classList.add('active'); _gCust.style('display', null); }
+      // 关闭「所有客户位点」后点击信息行：既不恢复全部，也不自动进入「保留已选客户」模式——
+      // 仅把该行加入选中集（高亮右侧信息行），地图点位保持隐藏、右侧检索栏仍显示全部客户行，便于继续多选；
+      // 待用户选好后再手动点「保留已选客户」才进入筛选（点亮客户图层 + 仅显选中点 + 收起未选行）。
+      if (!_custVisible && _gCust){ /* 保持关闭：仅记录选中，不动可见性 */ }
       // 即便该客户没有地图圆点（无坐标），也允许“行选中”执行；无节点时仅做行高亮、不做圆点切换
       const sel = (_gCust) ? _gCust.selectAll('g.cust-pt-g').filter(function(){ return +this.getAttribute('data-id') === id; }) : d3.select(null);
       const node = sel.node();
