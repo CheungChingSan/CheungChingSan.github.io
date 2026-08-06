@@ -521,7 +521,7 @@ window.addEventListener("unhandledrejection", function(e){
         this.classList.toggle('active', _custVisible);
         this.textContent = _custVisible ? '隐藏客户位点' : '显示客户位点';
         if (_gCust) _gCust.style('display', _custVisible ? null : 'none');
-        if (_gRoute) _gRoute.style('display', (_routeOn && _custVisible) ? null : 'none');
+        if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
         if (!_custVisible){ clearCustomerHighlight(); _embossRemoveBySource('customer'); }
       };
       // [显示/隐藏医院位点]：默认显示。医院点 = 圆内红十字，区别于客户绿点
@@ -612,7 +612,7 @@ window.addEventListener("unhandledrejection", function(e){
         this.classList.toggle('active', _routeOn);
         this.textContent = _routeOn ? '关闭路线规划' : '开启路线规划';
         rebuildRoute();   // 重算点集 + 顺序 + 绘制（_gRoute 图层在 rebuildRoute 内自愈，归属当前 zoom 组 g）
-        if (_gRoute) _gRoute.style('display', (_routeOn && _custVisible) ? null : 'none');
+        if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
       };
       // [路线规划清单]：弹出小窗口，按当前路线顺序罗列 起点 → 各客户 → 回到起点
       // 修复：清单按钮应「读取并自动开启路线规划」——若路线规划未开，先开启（与 routeplan 同款逻辑）再弹窗，避免清单读到空态
@@ -1821,6 +1821,7 @@ window.addEventListener("unhandledrejection", function(e){
           tr.style.display = (_hideUnselectedHosp && !isSel) ? 'none' : null;
         });
       }
+      if (_routeOn) rebuildRoute();   // 点集变化（隐藏/显示）→ 路线需重算（与 applyHideUnselected 同款）
     }
     // —— 路线规划：在可见客户点间连成一条「闭合最短路线」——
     // 用户要求：去掉起终点，把所有点连成一个封闭图形，使总周长最短。
@@ -2064,17 +2065,23 @@ window.addEventListener("unhandledrejection", function(e){
       if (!_gRoute) return;
       if (!_routeOn){ _gRoute.selectAll('*').remove(); if (_routeListOpen) renderRouteList(); return; }
       const pts = [];
-      _custEls.forEach(m => {
-        if (!m || !m.el || !m.rec) return;
-        if (_hideUnselected){
-          const idv = m.rec.__id;
-          const isSel = _hlIds.has(idv) || _hlIds.has(+idv) || _hlIds.has(String(idv));
-          if (!isSel) return;
-        }
-        if (_custVisible === false) return;            // 整层被隐藏（custtoggle）
-        if (m.el.style('display') === 'none') return;  // 被隐藏未选客户隐藏
-        pts.push(m);
-      });
+      // 🔴 路线规划统一收点：客户与医院「同一套逻辑」，仅圆点不同。
+      // 默认收「全部可见位点」，开启「隐藏未选」时只收「已选中(_hlIds / _hlHospIds)」位点。
+      const collect = (els, selSet, hideFlag, layerVisible) => {
+        if (!layerVisible) return;                      // 整层被隐藏（custtoggle / hosptoggle）
+        els.forEach(m => {
+          if (!m || !m.el || !m.rec) return;
+          if (hideFlag){
+            const idv = m.rec.__id;
+            const isSel = selSet.has(idv) || selSet.has(+idv) || selSet.has(String(idv));
+            if (!isSel) return;
+          }
+          if (m.el.style('display') === 'none') return;  // 被「隐藏未选」隐藏
+          pts.push(m);
+        });
+      };
+      collect(_custEls, _hlIds, _hideUnselected, _custVisible);
+      collect(_hospEls, _hlHospIds, _hideUnselectedHosp, _hospVisible);
       const hasDepot = !!_depot;
       const totalNodes = pts.length + (hasDepot ? 1 : 0);
       if (totalNodes < 2){ _routePts = []; _routeOrder = []; _routeSig = null; _gRoute.selectAll('*').remove(); if (_routeListOpen) renderRouteList(); return; }
@@ -2166,7 +2173,7 @@ window.addEventListener("unhandledrejection", function(e){
       const title = $('routeListTitle');
       const hasDepot = !!_depot;
       const totalNodes = _routePts.length + (hasDepot ? 1 : 0);
-      if (title) title.textContent = `路线规划清单（${_routePts.length} 个客户站点${hasDepot ? ' · 含计划起点' : ''}）`;
+      if (title) title.textContent = `路线规划清单（${_routePts.length} 个站点${hasDepot ? ' · 含计划起点' : ''}）`;
       if (!_routeOn || totalNodes < 2){
         body.innerHTML = '<li class="rl-empty">尚未生成路线 — 请点击「开启路线规划」后查看顺序名单。</li>';
         return;
@@ -2182,13 +2189,13 @@ window.addEventListener("unhandledrejection", function(e){
         }
         if (it.role === 'loop'){
           const fr = _routePts[it.firstCi] && _routePts[it.firstCi].rec;
-          return `<li class="rl-row rl-end"><span class="rl-badge">↺</span><span class="rl-main"><span class="rl-name">回到起点（${esc(fr ? (fr.company || '客户') : '客户')}）</span><span class="rl-sub">闭合回路，回到第 1 站</span></span></li>`;
+          return `<li class="rl-row rl-end"><span class="rl-badge">↺</span><span class="rl-main"><span class="rl-name">回到起点（${esc(fr ? (fr.company || fr.hospital || '站点') : '站点')}）</span><span class="rl-sub">闭合回路，回到第 1 站</span></span></li>`;
         }
         const m = _routePts[it.ci];
         const r = m.rec;
-        const region = r.__adm2 ? r.__adm2 : (r.__adm1 || '');
+        const region = r.__adm2 || r.__adm1 || r.area || '';
         const sub = [r.name, region].filter(Boolean).join(' · ');
-        return `<li class="rl-row ${it.isStart ? 'rl-start' : ''}" data-ci="${it.ci}" data-id="${r.__id}"><span class="rl-idx">${it.n}</span><span class="rl-main"><span class="rl-name">${esc(r.company || '未命名客户')}</span>${sub ? `<span class="rl-sub">${esc(sub)}</span>` : ''}</span></li>`;
+        return `<li class="rl-row ${it.isStart ? 'rl-start' : ''}" data-ci="${it.ci}" data-id="${r.__id}"><span class="rl-idx">${it.n}</span><span class="rl-main"><span class="rl-name">${esc(r.company || r.hospital || r.cn || '未命名站点')}</span>${sub ? `<span class="rl-sub">${esc(sub)}</span>` : ''}</span></li>`;
       });
       body.innerHTML = rows.join('');
     }
