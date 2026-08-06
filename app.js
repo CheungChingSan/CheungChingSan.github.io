@@ -209,6 +209,7 @@ window.addEventListener("unhandledrejection", function(e){
 
     // —— 4. 一级/二级行政区域地图 + 首都★ + 机场✈ ——
     let _topo=null, _topo2=null, PROJ=null, FC1=null, _svg=null, _gProv=null, _gAdm2=null, _gMark=null, _gCust=null, _custEls=[], _custVisible=true, _CUST_R=3.8, _hlIds=new Set(), _multiTrack=false, showAdm2=false, _adm2Loading=false, _adm2Promise=null, _features=null, _path=null, _markEls=[], _provFill=[], _provLine=[], _adm1Total=0, _adm2Paths=[], _pendingHl = (_urlHl != null && _urlHl !== '') ? parseInt(_urlHl, 10) : null;
+    let _gHosp=null, _hospEls=[], _hospVisible=true, _hlHospIds=new Set(), _activeTab='cust', _hospLoaded=false;  // 医院位点图层状态（红点+红十字，区别于客户绿点）
     // 懒加载名单（方案 A）：这些大国 ADM2 体量大，进图不预载，点击"显示二级行政区域"时才拉（IndexedDB 缓存，二次秒开）
     const LAZY_ADM2 = new Set(['ru', 'au']);
     let _adm2Lazy = LAZY_ADM2.has(iso2);   // 当前国是否启用懒加载
@@ -355,6 +356,7 @@ window.addEventListener("unhandledrejection", function(e){
       const gEmboss = g.append('g').attr('class','emboss-layer');
       _gEmboss = gEmboss;
       _gCust = g.append('g').attr('class','cust-layer');  // 客户点图层（顶层）：置于标志层之上，永不被机场/首都图标遮挡；随地图平移/缩放自动同步，绝不会漂移/消失
+      _gHosp = g.append('g').attr('class','hosp-layer');  // 医院点图层（最顶层）：红点+红十字，置于客户点之上，随地图同步（不漂移/不消失）
       _gMark = g.insert('g', '.cust-layer');  // 标志层（机场/首都）置于客户点之下、省图层之上：不遮挡客户点；随 g 变换自动跟随，尺寸由 updateMarkers 反向 scale 恒定屏幕大小
       reapplyRegionSel();
       drawMarkers();
@@ -364,6 +366,7 @@ window.addEventListener("unhandledrejection", function(e){
         .on('zoom', ev => {
           g.attr('transform', ev.transform);
           updateCustZoom(ev.transform.k);  // 客户点大小/铺开随缩放动态变化；位置随 g 变换自动跟随（不漂移、不消失）
+          updateHospZoom(ev.transform.k);  // 医院点（红点+红十字）同步随缩放变化：半径/铺开/红十字尺寸随之插值
           updateMarkers(ev.transform);
           updateDepotMarker(ev.transform); // 红旗图标恒定屏幕尺寸
           if (_routeOn) drawRoute(ev.transform.k);   // 路线端点随缩放铺开量同步，仅 O(n) 重拼路径，不重算 TSP 顺序（防卡）
@@ -464,7 +467,7 @@ window.addEventListener("unhandledrejection", function(e){
         _embossRegions.clear(); _hoverRegion = null; renderEmboss();           // 清空选中行政区域 3D 浮雕
         reapplyRegionSel();                                                    // 清空一级/二级行政区选中态
         const cs = $('custSearch'); if (cs) cs.value = '';                     // 清空搜索框
-        applyRegionFilter();                                                   // 区域筛选 + 搜索 → 重置为全部客户
+        applyListFilter();                                                     // 区域筛选 + 搜索 → 重置为全部（按当前标签：客户/医院）
         if (_hideUnselected){                                                  // 恢复「显示全部客户」
           _hideUnselected = false;
           const hu = $('hideunsel'); if (hu){ hu.classList.remove('active'); hu.textContent = '隐藏未选客户'; }
@@ -497,6 +500,11 @@ window.addEventListener("unhandledrejection", function(e){
           const ct = $('custtoggle'); if (ct){ ct.classList.add('active'); ct.textContent = '隐藏客户位点'; }
           if (_gCust) _gCust.style('display', null);
         }
+        if (!_hospVisible){                                                    // 恢复医院位点显示
+          _hospVisible = true;
+          const ht = $('hosptoggle'); if (ht){ ht.classList.add('active'); ht.textContent = '隐藏医院位点'; }
+          if (_gHosp) _gHosp.style('display', null);
+        }
         if (showAdm2 !== _showAdm2Init && $('adm2toggle')){                    // 二级行政区域回到初始默认态
           $('adm2toggle').click();
         }
@@ -510,6 +518,17 @@ window.addEventListener("unhandledrejection", function(e){
         if (_gRoute) _gRoute.style('display', (_routeOn && _custVisible) ? null : 'none');
         if (!_custVisible){ clearCustomerHighlight(); _embossRemoveBySource('customer'); }
       };
+      // [显示/隐藏医院位点]：默认显示。医院点 = 圆内红十字，区别于客户绿点
+      $('hosptoggle').onclick = function(){
+        _hospVisible = !_hospVisible;
+        this.classList.toggle('active', _hospVisible);
+        this.textContent = _hospVisible ? '隐藏医院位点' : '显示医院位点';
+        if (_gHosp) _gHosp.style('display', _hospVisible ? null : 'none');
+        if (!_hospVisible){ clearHospitalHighlight(); }
+      };
+      // [客户检索 / 医院检索 切换]
+      if ($('tabCust')) $('tabCust').onclick = () => setTab('cust');
+      if ($('tabHosp')) $('tabHosp').onclick = () => setTab('hosp');
       // [开启/关闭多点追踪]：默认关闭（单点）。开启 → 可同时保留多个客户黄点；关闭 → 点新行即清空上家。
       $('multitrack').onclick = function(){
         _multiTrack = !_multiTrack;
@@ -520,7 +539,7 @@ window.addEventListener("unhandledrejection", function(e){
           if (svg && zoom) svg.transition().duration(350).call(zoom.transform, d3.zoomIdentity);
           clearCustomerHighlight();
           _embossRegions.clear(); _hoverRegion = null; renderEmboss();
-          reapplyRegionSel(); applyRegionFilter();
+          reapplyRegionSel(); applyListFilter();
         }
       };
       // [开启/关闭静态锁图]：默认关闭。开启 → 禁用悬停高亮 + 3D浮雕，并锁住地图（无滚轮缩放/拖拽/按钮缩放），冻结当前视图
@@ -597,8 +616,8 @@ window.addEventListener("unhandledrejection", function(e){
       if ($('routeListClose')) $('routeListClose').onclick = closeRouteList;
       document.querySelectorAll('.rl-mode').forEach(b => { b.onclick = () => setRouteMode(b.dataset.mode); });
       document.addEventListener('keydown', e => { if (e.key === 'Escape' && _routeListOpen) closeRouteList(); });
-      // [返回系统]：回到主系统（新华健康外贸客户管理系统）首页
-      $('backSys').onclick = () => { window.location.href = 'index.html'; };
+      // [返回系统]：回到主系统（新华健康外贸客户管理系统）首页（仅 worldmap 等含 backSys 的页面有效；country 无此元素，空值守卫避免崩溃）
+      if ($('backSys')) $('backSys').onclick = () => { window.location.href = 'index.html'; };
       // ADM2 默认开启时，初次渲染也禁用 ADM1 prov-fill 交互（与 adm2toggle 一致）
       if (showAdm2 && _topo2){ renderAdm2(); _provFill.forEach(n => n.style.pointerEvents = 'none'); }
       if (insular.length) renderInsularInset(insular);
@@ -629,7 +648,7 @@ window.addEventListener("unhandledrejection", function(e){
       // 无区域：客点落回平面
       if (!regions.length){
         _custEls.forEach(m => { m.lifted = false; m.liftedBase = null; });
-        if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); }
+        if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); updateHospZoom(_curK || 1); }
         return;
       }
       // 预计算每区域的路径与质心（feature 保留用于客户点 d3.geoContains 判定）
@@ -1255,10 +1274,11 @@ window.addEventListener("unhandledrejection", function(e){
         applyPendingHl();               // 世界地图跳转带 hl 参数时，客户就绪即点亮该行（省份未就绪则由 renderProvinces 兜底触发）
         warnDupCoords(list);            // 自检：坐标撞车会导致圆点叠在一起看不见，立即暴露
         let _custSearchTimer = null;
-        $('custSearch').oninput = () => { clearTimeout(_custSearchTimer); _custSearchTimer = setTimeout(() => applyRegionFilter(), 120); };
+        $('custSearch').oninput = () => { clearTimeout(_custSearchTimer); _custSearchTimer = setTimeout(() => applyListFilter(), 120); };
       }).catch(() => { $('custEmpty').textContent = '客户数据加载失败'; $('custEmpty').style.display = 'block'; });
     }
     function renderCustomers(list){
+      const head = $('custHead'); if (head) head.innerHTML = '<tr><th>公司</th><th>电话</th><th>联系人</th><th>地址</th></tr>';  // 切回客户表头（医院检索会改成医院表头）
       const regions = _selectedRegions();
       const tag = regions.length ? ` · 📍 ${regions.map(r => r.label || r.name).join(' / ')}` : '';
       $('custCount').textContent = `共 ${list.length} 条` + tag;
@@ -1399,15 +1419,19 @@ window.addEventListener("unhandledrejection", function(e){
       _gCust.style('display', _custVisible ? null : 'none');
       computeOffsets();                                  // 一次性算出恒定屏幕空间去重叠偏移
       updateCustZoom(_curK || 1);  // 初始布局（与当前缩放一致：k=1 → 像素粒堆叠于真实位置）
+      updateHospZoom(_curK || 1);  // 医院点同步初始布局
       updateCustStat();   // 点位重绘后刷新右下角统计
     }
-    // —— 右下角统计：信息总计(录入客户总数) / 位置统计(地图绿色圆点数量)，用于对比计算空白地址个数 ——
+    // —— 右下角统计：客户总数/落点 + 医院总数/落点（同时展示两类数据，区分经销商与医院）——
     function updateCustStat(){
       const el = $('custStat'); if (!el) return;
-      const list = window.__custList || [];
-      const total = list.length;                                   // 信息总计：录入国家地图检索的客户总数
-      const located = list.filter(r => r.lat != null && r.lng != null).length;  // 位置统计：地图上有圆点的客户数
-      el.innerHTML = `信息总计 <b>${total}</b> 个 · 位置统计 <b>${located}</b> 个`;
+      const cl = window.__custList || [];
+      const hl = window.__hospList || [];
+      const custTotal = cl.length;
+      const custLoc = cl.filter(r => r.lat != null && r.lng != null).length;     // 位置统计：地图上有绿点的客户数
+      const hospTotal = hl.length;
+      const hospLoc = hl.filter(r => r.lat != null && r.lng != null).length;     // 位置统计：地图上有红点的医院数
+      el.innerHTML = `客户 <b>${custTotal}</b>(位${custLoc}) · 医院 <b>${hospTotal}</b>(位${hospLoc})`;
     }
     // —— 自检：多个客户共用同一经纬度 → 圆点完全叠在一起"看不见"，属定位数据不准。加载即报警，杜绝此类问题 ——
     function warnDupCoords(list){
@@ -1416,6 +1440,213 @@ window.addEventListener("unhandledrejection", function(e){
       const dups = Object.entries(seen).filter(([, v]) => v.length > 1);
       if (dups.length) console.warn('[客户定位自检] 以下客户经纬度完全重合（多为同落 Dhaka 市中心），数据已按真实坐标保留；地图端已做螺旋去重叠(declutter)，每个点仍可独立 hover。如需更精确街道级坐标可单独重编码：\n' + dups.map(([k, v]) => '  ' + k + ' => ' + v.join(' , ')).join('\n'));
     }
+    // —— 6. 医院位点（hospitals.json，达卡市私立医院，红点+红十字，区别于客户绿点）——
+    const _HOSP_GA = 2.399963229728653;     // 黄金角：重合点均匀扇开（与客户去重叠同款）
+    const HOSP_GRAIN_R = 1.8;               // 初始像素粒半径（屏幕 px）
+    const HOSP_DOT_R = 3.4;                 // 放大后清晰圆点半径（略大于客户圆点，给红十字留空间）
+    const HOSP_HIT_PX = 11;                 // 透明命中区：恒定屏幕尺寸(px)
+    // 一次性算恒定屏幕空间去重叠偏移（参考系 k=1），之后不再随缩放重算（与客户 computeOffsets 同款）
+    function computeHospOffsets(){
+      const els = _hospEls, n = els ? els.length : 0;
+      if (!n) return;
+      const minDist = HOSP_DOT_R * 2 + 2.0;
+      for (let i = 0; i < n; i++) els[i].off = [0, 0];
+      const buckets = {};
+      for (let i = 0; i < n; i++){
+        const b = els[i].base;
+        const key = Math.round(b[0]) + '_' + Math.round(b[1]);
+        (buckets[key] = buckets[key] || []).push(i);
+      }
+      for (const key in buckets){
+        const grp = buckets[key], m = grp.length;
+        if (m <= 1) continue;
+        const R = minDist * 0.6 * Math.sqrt(m);
+        for (let j = 0; j < m; j++){
+          const i = grp[j];
+          if (j === 0){ els[i].off = [0, 0]; continue; }
+          const ang = j * _HOSP_GA, rad = R * Math.sqrt(j / m);
+          els[i].off = [Math.cos(ang) * rad, Math.sin(ang) * rad];
+        }
+      }
+      for (let iter = 0; iter < 25; iter++){
+        let moved = false;
+        for (let i = 0; i < n; i++){
+          const xi = els[i].base[0] + els[i].off[0], yi = els[i].base[1] + els[i].off[1];
+          for (let j = i + 1; j < n; j++){
+            const xj = els[j].base[0] + els[j].off[0], yj = els[j].base[1] + els[j].off[1];
+            let dx = xj - xi, dy = yj - yi, d2 = dx*dx + dy*dy;
+            if (d2 < minDist * minDist){
+              let d = Math.sqrt(d2), ux, uy;
+              if (d > 0.01){ ux = dx/d; uy = dy/d; } else { const a = i * _HOSP_GA; ux = Math.cos(a); uy = Math.sin(a); d = 0; }
+              const push = (minDist - d) / 2 + 0.05;
+              els[i].off[0] -= ux*push; els[i].off[1] -= uy*push;
+              els[j].off[0] += ux*push; els[j].off[1] += uy*push;
+              moved = true;
+            }
+          }
+        }
+        if (!moved) break;
+      }
+    }
+    // 医院点随缩放动态：颗粒 ↔ 圆点（半径/铺开/红十字尺寸同步插值，保证红十字始终在圆点内）
+    function updateHospZoom(k){
+      if (!_gHosp || !_hospEls || !_hospEls.length) return;
+      const zf = Math.max(0, Math.min(1, (k - 1) / (ZOOM_FULL - 1)));
+      const rScreen = HOSP_GRAIN_R + (HOSP_DOT_R - HOSP_GRAIN_R) * zf;
+      const rContent = rScreen / k;                       // 内容坐标半径（在 g 内被 scale(k) 还原成屏幕 rScreen）
+      const sK = Math.min(1, zf * 1.8) / k;               // 去重叠偏移系数
+      const hlCross = rContent * 0.60;                    // 红十字半长（< rContent：严格不超出圆点尺寸）
+      const hwCross = rContent * 0.30;                    // 红十字半宽
+      const strokeC = 1.0 / k;                            // 圆点描边：恒定屏幕 ~1px
+      const els = _hospEls;
+      for (let i = 0; i < els.length; i++){
+        const m = els[i]; if (!m.el) continue;
+        const b = (m.lifted && m.liftedBase) ? m.liftedBase : m.base;
+        const ox = (m.off ? m.off[0] : 0) * sK;
+        const oy = (m.off ? m.off[1] : 0) * sK;
+        m.el.attr('transform', `translate(${(b[0] + ox).toFixed(2)},${(b[1] + oy).toFixed(2)})`);
+        if (m.ptEl) m.ptEl.attr('r', rContent).attr('stroke-width', strokeC);
+        if (m.crossV) m.crossV.attr('x', -hwCross).attr('y', -hlCross).attr('width', 2*hwCross).attr('height', 2*hlCross);
+        if (m.crossH) m.crossH.attr('x', -hlCross).attr('y', -hwCross).attr('width', 2*hlCross).attr('height', 2*hwCross);
+        if (m.hitEl) m.hitEl.attr('r', HOSP_HIT_PX / k);
+      }
+    }
+    function drawHospitalPointsOnMap(list){
+      if (!_gHosp || !PROJ){
+        if (drawHospitalPointsOnMap._tries == null) drawHospitalPointsOnMap._tries = 0;
+        if (drawHospitalPointsOnMap._tries < 40){ drawHospitalPointsOnMap._tries++; setTimeout(() => drawHospitalPointsOnMap(list), 200); }
+        return;
+      }
+      drawHospitalPointsOnMap._tries = 0;
+      _gHosp.selectAll('g.hosp-pt-g').remove();
+      _hospEls = [];
+      const pts = (list || []).filter(r => r.lat != null && r.lng != null);
+      const projAll = pts.map(r => { const p = PROJ([+r.lng, +r.lat]); return p ? { r, p } : null; }).filter(Boolean);
+      projAll.forEach((o) => {
+        const p = o.p, r = o.r;
+        const g = _gHosp.append('g').attr('class','hosp-pt-g').attr('data-id', r.__id)
+          .on('mouseenter', () => showHospTip(r))
+          .on('mouseleave', hideTip)
+          .on('click', (e) => { e.stopPropagation(); highlightHospital(r.__id, { doZoom: false, scroll: true }); });
+        // 可见圆点（白底红框）
+        g.append('circle').attr('class','hosp-pt').attr('r', HOSP_GRAIN_R).attr('cx',0).attr('cy',0)
+          .attr('fill','#ffffff').attr('stroke','#dc2626').attr('stroke-width', 1.0).style('cursor','pointer');
+        // 红十字（两个矩形，尺寸在 updateHospZoom 内随缩放更新；半长=0.6·半径，严格在圆点内，绝不超出）
+        const cv = g.append('rect').attr('class','hosp-cross').attr('x',0).attr('y',0).attr('width',0).attr('height',0).attr('fill','#dc2626').style('pointer-events','none');
+        const ch = g.append('rect').attr('class','hosp-cross').attr('x',0).attr('y',0).attr('width',0).attr('height',0).attr('fill','#dc2626').style('pointer-events','none');
+        // 透明命中区（提升 hover/点击命中率）
+        g.append('circle').attr('class','hosp-hit').attr('r', HOSP_HIT_PX).attr('cx',0).attr('cy',0).attr('fill','transparent').style('cursor','pointer')
+          .on('mouseenter', () => showHospTip(r)).on('mouseleave', hideTip);
+        const ptEl = g.select('circle.hosp-pt');
+        const hitEl = g.select('circle.hosp-hit');
+        _hospEls.push({ el:g, base:p, rec:r, lifted:false, liftedBase:null, off:[0,0], ptEl, crossV:cv, crossH:ch, hitEl });
+      });
+      // 重绘后恢复已有选中高亮（仅改 fill/stroke，尺寸/位置不变）
+      if (_hlHospIds.size){
+        _gHosp.selectAll('g.hosp-pt-g').each(function(){
+          if (_hlHospIds.has(+this.getAttribute('data-id'))) this.classList.add('hosp-hl');
+        });
+      }
+      _gHosp.style('display', _hospVisible ? null : 'none');
+      computeHospOffsets();
+      updateHospZoom(_curK || 1);
+    }
+    function showHospTip(r){
+      const tip = $('mapTip');
+      tip.innerHTML = '<b style="color:#fca5a5">' + esc(r.hospital || r.cn) + '</b>'
+        + (r.cn && r.cn !== r.hospital ? '<br><span style="opacity:.85">' + esc(r.cn) + '</span>' : '')
+        + (r.area ? '<br><span style="opacity:.85">📍 ' + esc(r.area) + '</span>' : '')
+        + (r.beds != null ? '<br><span style="opacity:.85">床位 ' + esc(r.beds) + '</span>' : '')
+        + (r.phone ? '<br><span style="opacity:.7">' + esc(r.phone) + '</span>' : '');
+      tip.style.display = 'block';
+    }
+    function clearHospitalHighlight(){
+      if (_gHosp) _gHosp.selectAll('g.hosp-pt-g.hosp-hl').classed('hosp-hl', false);
+      _hlHospIds.clear();
+      const body = $('custBody'); if (body) body.querySelectorAll('tr.sel').forEach(tr => tr.classList.remove('sel'));
+    }
+    function highlightHospital(id, opts){
+      opts = opts || {};
+      const doZoom = (opts.doZoom !== false);
+      if (!_hospVisible && _gHosp){ _hospVisible = true; _gHosp.style('display', null); const b=$('hosptoggle'); if(b){ b.classList.add('active'); b.textContent='隐藏医院位点'; } }
+      const sel = (_gHosp) ? _gHosp.selectAll('g.hosp-pt-g').filter(function(){ return +this.getAttribute('data-id') === id; }) : d3.select(null);
+      const node = sel.node();
+      const nowHl = node ? node.classList.contains('hosp-hl') : false;
+      if (!nowHl){
+        if (!_multiTrack) clearHospitalHighlight();
+        if (!_multiTrack && doZoom) _saveT = d3.zoomTransform(_svg.node());
+      } else if (!_multiTrack && _saveT) {
+        if (doZoom && !_staticLock) _svg.transition().duration(620).call(_zoom.transform, _saveT);
+        _saveT = null;
+      }
+      if (node){
+        sel.classed('hosp-hl', !nowHl);
+        if (!nowHl) sel.raise();
+      }
+      if (!nowHl) _hlHospIds.add(id); else _hlHospIds.delete(id);
+      const row = document.querySelector('#custBody tr[data-id="'+id+'"]');
+      if (row){
+        row.classList.toggle('sel', !nowHl);
+        if (!nowHl && opts.scroll) row.scrollIntoView({ block:'nearest', behavior:'smooth' });
+      }
+      if (!nowHl && doZoom && !_staticLock){
+        const rec = (window.__hospList || []).find(x => x.__id === id);
+        if (rec && rec.lat != null && rec.lng != null) zoomToPoint(rec.lat, rec.lng);
+      }
+    }
+    function loadHospitals(){
+      fetch('hospitals.json').then(r => r.json()).then(data => {
+        const all = (data && data.records) || [];
+        const list = all.filter(r => (r.iso2 || '').toLowerCase() === 'bd');   // 仅孟加拉（达卡）医院落此国家地图
+        list.forEach((r, i) => { r.__id = i; });
+        window.__hospList = list;
+        _hospLoaded = true;
+        if ($('hospCount')) $('hospCount').textContent = list.length + ' 家';
+        drawHospitalPointsOnMap(list);
+        updateCustStat();
+        if (_activeTab === 'hosp') renderHospitals(list);
+      }).catch(() => { /* 无 hospitals.json 不影响客户功能（其它国家地图本就无医院数据） */ });
+    }
+    function renderHospitals(list){
+      const head = $('custHead'); if (head) head.innerHTML = '<tr><th>医院</th><th>区域</th><th>床位</th><th>电话</th></tr>';
+      const cnt = $('custCount'); if (cnt) cnt.textContent = `共 ${list.length} 家`;
+      const body = $('custBody'); if (!body) return;
+      if (!list.length){ body.innerHTML = ''; const e=$('custEmpty'); if(e){ e.style.display='block'; e.textContent='该国暂无医院数据（仅孟加拉达卡市已导入）。'; } return; }
+      const e=$('custEmpty'); if(e) e.style.display='none';
+      body.innerHTML = list.map(r =>
+        `<tr data-id="${r.__id}"><td>${esc(r.hospital)}</td><td>${esc(r.area)}</td><td>${esc(r.beds==null?'—':r.beds)}</td><td>${esc(r.phone)}</td></tr>`
+      ).join('');
+      body.querySelectorAll('tr').forEach(tr => { tr.onclick = () => highlightHospital(+tr.dataset.id); });
+      _hlHospIds.forEach(id => { const rr = body.querySelector('tr[data-id="'+id+'"]'); if (rr) rr.classList.add('sel'); });
+    }
+    // 列表筛选分发：客户 tab → 区域+搜索；医院 tab → 搜索（医院暂不做行政区筛选，因全部位于达卡）
+    function applyListFilter(){
+      if (_activeTab === 'hosp'){
+        const list = window.__hospList || [];
+        const q = ($('custSearch').value || '').trim().toLowerCase();
+        const flt = q ? list.filter(r => [r.hospital, r.cn, r.area, r.address, r.phone].some(v => (v||'').toLowerCase().includes(q))) : list;
+        renderHospitals(flt);
+      } else {
+        applyRegionFilter();
+      }
+    }
+    // 客户检索 / 医院检索 标签切换
+    function setTab(tab){
+      _activeTab = tab;
+      const tc=$('tabCust'), th=$('tabHosp');
+      if(tc) tc.classList.toggle('active', tab==='cust');
+      if(th) th.classList.toggle('active', tab==='hosp');
+      const ch=$('custHint'), hh=$('hospHint');
+      if(ch) ch.style.display = tab==='cust' ? '' : 'none';
+      if(hh) hh.style.display = tab==='hosp' ? '' : 'none';
+      const cw=$('custCountryWrap'), hw=$('hospCountryWrap');
+      if(cw) cw.style.display = tab==='cust' ? '' : 'none';
+      if(hw) hw.style.display = tab==='hosp' ? '' : 'none';
+      const ph=$('custSearch'); if(ph){ ph.value=''; ph.placeholder = tab==='hosp' ? '搜索 医院 / 区域 / 床位 / 电话…' : '搜索 公司 / 电话 / 姓名 / 地址…'; }
+      if (tab==='hosp') renderHospitals(window.__hospList || []);
+      else applyRegionFilter();
+    }
+
     // —— 客户按二级区域(__adm2 名称)预分组：renderEmboss 仅测“该区域自己的客户”，彻底去掉逐区域对全部客户的 geoContains（零精度损失）——
     function buildAdm2CustMap(){
       _adm2CustMap = new Map();
@@ -1519,7 +1750,7 @@ window.addEventListener("unhandledrejection", function(e){
       // 该区域 3D 浮雕显示（增/删切换；单点替换、多点追踪累积）—— 客户表筛选与描边均由 _embossRegions 派生，自动同步多区域
       if (feature) _embossAddOrToggle(type, name, feature, 'region');
       reapplyRegionSel();
-      applyRegionFilter();
+      applyListFilter();
     }
     function reapplyRegionSel(){
       _provFill.forEach(n => n.classList.remove('prov-sel'));
@@ -2097,7 +2328,7 @@ window.addEventListener("unhandledrejection", function(e){
       tip.style.display = 'block';
     }
 
-    loadHolidays(); loadFX(); loadProvinces(); loadCustomers();
+    loadHolidays(); loadFX(); loadProvinces(); loadCustomers(); loadHospitals();
 
     // —— 看门狗：若地图 SVG 被外部脚本意外移除（如预览平台重写 DOM），自动重建 ——
     (function wd(){
@@ -2105,6 +2336,7 @@ window.addEventListener("unhandledrejection", function(e){
       if (m && (!_svg || !_svg.node().isConnected) && _topo){
         try { renderProvinces(''); if (showAdm2 && _topo2){ renderAdm2(); _provFill.forEach(n => n.style.pointerEvents = 'none'); } } catch(e){}
         if (window.__custList) drawCustomerPointsOnMap(window.__custList);
+        if (window.__hospList) drawHospitalPointsOnMap(window.__hospList);
       }
       setTimeout(wd, 1500);
     })();
