@@ -111,6 +111,25 @@
   }
   .map-toolbar button:hover{ border-color:var(--accent); }
   .map-toolbar button.active{ background:rgba(56,189,248,.32); border-color:var(--accent); color:#fff; }
+  /* 工具栏下拉分组：一级按钮[位点搜寻]/[路线规划]/[视图] → 点开显示子按钮，缓解按钮过多拥挤 */
+  .tb-group{ position:relative; display:inline-flex; }
+  .tb-parent{ display:inline-flex; align-items:center; gap:6px; }
+  .tb-parent .chev{ font-size:10px; line-height:1; opacity:.7; transition:transform .2s; }
+  .tb-group.open .tb-parent{ background:rgba(56,189,248,.32); border-color:var(--accent); color:#fff; }
+  .tb-group.open .tb-parent .chev{ transform:rotate(180deg); }
+  .tb-menu{
+    position:absolute; top:calc(100% + 8px); left:0; z-index:60;
+    display:none; flex-direction:column; gap:4px; padding:6px; min-width:174px;
+    background:rgba(12,20,36,.97); border:1px solid var(--line); border-radius:12px;
+    backdrop-filter:blur(14px); box-shadow:0 14px 34px rgba(0,0,0,.45);
+  }
+  .tb-group.open .tb-menu{ display:flex; }
+  .tb-menu button{
+    white-space:nowrap; text-align:left; justify-content:flex-start; padding:7px 11px; margin:0;
+    border:1px solid transparent; border-radius:8px; background:transparent; color:var(--txt); font-size:12px;
+  }
+  .tb-menu button:hover{ border-color:var(--accent); background:rgba(56,189,248,.14); }
+  .tb-menu button.active{ background:rgba(56,189,248,.32); border-color:var(--accent); color:#fff; }
   /* 静态锁图：区域 path 置为不可交互 → 无悬停高亮/点击；光标恢复默认，避免误以为可拖拽 */
   #map.static-locked .prov-fill, #map.static-locked .prov-line, #map.static-locked path.adm2{ pointer-events:none !important; }
   #map.static-locked{ cursor:url('assets/cursors/LoLNormal.png') 3 2, default; }  /* 静态锁图：光标维持 LOL 小手（DOM 图接管；此规则仅在光标图隐藏时兜底） */
@@ -356,15 +375,31 @@
 
     <section class="mapwrap">
       <div class="map-toolbar">
-        <button id="adm2toggle">显示二级行政区域</button>
-        <button id="custtoggle" class="active">隐藏客户位点</button>
-        <button id="hosptoggle" class="active">隐藏医院位点</button>
-        <button id="multitrack">开启多点追踪</button>
-        <button id="staticlock">开启静态锁图</button>
-        <button id="hideunsel">隐藏未选客户</button>
-        <button id="selectDepot">选取计划位置</button>
-        <button id="routeplan">开启路线规划</button>
-        <button id="routelist">路线规划清单</button>
+        <div class="tb-group">
+          <button class="tb-parent" data-group="marker">位点搜寻 <span class="chev">▾</span></button>
+          <div class="tb-menu" data-group="marker">
+            <button id="custtoggle" class="active">隐藏客户位点</button>
+            <button id="hideunsel" class="active">隐藏未选客户</button>
+            <button id="hosptoggle" class="active">隐藏医院位点</button>
+            <button id="hideunselHosp">隐藏未选医院</button>
+            <button id="adm2toggle">显示二级行政区域</button>
+          </div>
+        </div>
+        <div class="tb-group">
+          <button class="tb-parent" data-group="route">路线规划 <span class="chev">▾</span></button>
+          <div class="tb-menu" data-group="route">
+            <button id="routeplan">开启路线规划</button>
+            <button id="routelist">路线规划清单</button>
+            <button id="selectDepot">选取计划位置</button>
+          </div>
+        </div>
+        <div class="tb-group">
+          <button class="tb-parent" data-group="view">视图 <span class="chev">▾</span></button>
+          <div class="tb-menu" data-group="view">
+            <button id="multitrack">开启多点追踪</button>
+            <button id="staticlock">开启静态锁图</button>
+          </div>
+        </div>
       </div>
       <div id="map"><div id="depotOverlay" style="display:none;position:absolute;inset:0;z-index:4;cursor:crosshair"></div></div>
       <div id="inset" class="map-inset" style="display:none;"></div>
@@ -420,6 +455,6 @@
   <script defer src="d3.v7.min.js"></script>
   <script defer src="topojson-client.min.js"></script>
   <script defer src="country_meta.js"></script>
-  <script defer src="app.js?v=202608061013"></script>
+  <script defer src="app.js?v=202608061046"></script>
 </body>
 </html>
