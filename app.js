@@ -542,6 +542,7 @@ window.addEventListener("unhandledrejection", function(e){
           const ht = $('hosptoggle'); if (ht) ht.classList.add('active');
           if (_gHosp) _gHosp.style('display', null);
         }
+        applyHideUnselected();                                                // 重置后按当前状态恢复客户点位可见性（总开关/选中/保留模式）
         if (showAdm2 !== _showAdm2Init && $('adm2toggle')){                    // 二级行政区域回到初始默认态
           $('adm2toggle').click();
         }
@@ -550,14 +551,13 @@ window.addEventListener("unhandledrejection", function(e){
       $('custtoggle').onclick = function(){
         _custVisible = !_custVisible;
         this.classList.toggle('active', _custVisible);
-        if (_gCust) _gCust.style('display', _custVisible ? null : 'none');
         if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
         if (!_custVisible){ clearCustomerHighlight(); _embossRemoveBySource('customer'); }
         else if (_hideUnselected){   // 开启「显示所有客户位点」时，自动退出「保留已选客户」筛选，确保真正全部可见（不残留只显示选中态）
           _hideUnselected = false;
           const hu = $('hideunsel'); if (hu) hu.classList.remove('active');
-          applyHideUnselected();
         }
+        applyHideUnselected();   // 按"总开关+选中"逐个控制点位可见性：总开关关→仅选中点亮起；开→正常/保留模式
       };
       // [医院位点]：默认显示。医院点 = 圆内红十字，区别于客户绿点
       $('hosptoggle').onclick = function(){
@@ -1470,7 +1470,7 @@ window.addEventListener("unhandledrejection", function(e){
           if (_hlIds.has(+this.getAttribute('data-id'))) this.classList.add('cust-hl');
         });
       }
-      _gCust.style('display', _custVisible ? null : 'none');
+      applyHideUnselected();   // 重绘后按"总开关+选中"恢复各点可见性（总开关关且有点亮选→仅选中可见；否则按保留模式），避免整组隐藏把点亮选的点也吃掉
       computeOffsets();                                  // 一次性算出恒定屏幕空间去重叠偏移
       updateCustZoom(_curK || 1);  // 初始布局（与当前缩放一致：k=1 → 像素粒堆叠于真实位置）
       updateHospZoom(_curK || 1);  // 医院点同步初始布局
@@ -1835,9 +1835,12 @@ window.addEventListener("unhandledrejection", function(e){
       _custEls.forEach(m => {
         if (!m || !m.el || !m.rec) return;
         const isSel = isSelected(m.rec.__id);
-        m.el.style('display', (_hideUnselected && !isSel) ? 'none' : null);
+        // 总开关「所有客户位点」开启 → 正常显示（保留模式则仅选中）；总开关关闭 → 仅选中点亮起
+        // （关全部后点信息行=点亮所选客户点，不恢复全部；其余点仍隐藏）
+        const show = _custVisible ? !(_hideUnselected && !isSel) : isSel;
+        m.el.style('display', show ? null : 'none');
       });
-      // 检索栏信息行：未选中则隐藏（保留选中行）
+      // 检索栏信息行：仅当「保留已选客户」开启时才隐藏未选中行；否则全部显示（便于关全部后继续多选）
       document.querySelectorAll('.cust-table tbody tr').forEach(tr => {
         const idv = tr.getAttribute('data-id');
         const isSel = isSelected(idv);
