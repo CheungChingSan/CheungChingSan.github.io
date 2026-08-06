@@ -124,8 +124,6 @@
     backdrop-filter:blur(14px); box-shadow:0 14px 34px rgba(0,0,0,.45);
   }
   .tb-group.open .tb-menu{ display:flex; }
-  /* 独立按钮分隔线：把[开启多点追踪]/[开启静态锁图]与下拉分组明确隔开，强调它们是顶层独立按钮 */
-  .tb-sep{ width:1px; height:22px; background:var(--line); margin:0 4px; flex:none; }
   /* 顶层独立按钮：禁止被 flex 压缩，避免窄屏下被裁切而「看起来没独立显示」 */
   .map-toolbar button.tb-standalone{ flex:none; }
   .tb-menu button{
@@ -389,7 +387,6 @@
             <button id="adm2toggle">二级行政区域展开</button>
           </div>
         </div>
-        <span class="tb-sep" aria-hidden="true"></span>
         <button id="multitrack" class="tb-standalone">开启多点追踪</button>
         <button id="staticlock" class="tb-standalone">开启静态锁图</button>
         <div class="tb-group">
@@ -455,6 +452,6 @@
   <script defer src="d3.v7.min.js"></script>
   <script defer src="topojson-client.min.js"></script>
   <script defer src="country_meta.js"></script>
-  <script defer src="app.js?v=202608061430"></script>
+  <script defer src="app.js?v=202608061445"></script>
 </body>
 </html>
