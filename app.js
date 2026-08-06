@@ -104,6 +104,9 @@ window.addEventListener("unhandledrejection", function(e){
       // 所属地区：大洲 / 子区域（大致方向）
       const sub = (window.SUBREGION && window.SUBREGION[iso2]) || null;
       $('region').textContent = sub ? continent + '/' + sub : continent;
+      // 人均GDP（World Bank 名义，current US$）
+      if (facts && facts.gdp != null){ $('gdp').textContent = '约 ' + Number(facts.gdp).toLocaleString('en-US') + ' 美元' + (facts.gdpYear ? '（' + facts.gdpYear + '）' : ''); }
+      else { $('gdp').textContent = '—'; }
     })();
 
     // —— 2. 公休日（nager.at；仅显示今天之后；名称翻译为中文）——
@@ -174,35 +177,30 @@ window.addEventListener("unhandledrejection", function(e){
         }).catch(() => { $('holidayList').innerHTML = '<li class="err">公休日加载失败（网络受限）</li>'; });
     }
 
-    // —— 3. 汇率（er-api，CNY 基准；顺序：人民币→该国 / 当地→人民币 / 人民币→美元 / 美元→该国）——
-    function renderFX(j, code){
-      if (!code || !j.rates || j.rates[code] == null){ $('fxBody').innerHTML = '<span class="err">该国货币暂无汇率</span>'; return; }
-      const cnyToCur = j.rates[code];          // 1 人民币 = ? 该国货币
-      const cnyToUsd = j.rates.USD;            // 1 人民币 = ? 美元
-      const usdToCur = cnyToCur / cnyToUsd;     // 1 美元 = ? 该国货币
-      const curToCny = 1 / cnyToCur;           // 1 该国货币 = ? 人民币
-      const usdToCny = 1 / cnyToUsd;           // 1 美元 = ? 人民币
+    // —— 3. 汇率（与产品价格页统一：仅采用 fx_rate.json 央行中间价，弃用 er-api 市场汇率）——
+    function renderFX(j){
+      const usdCny = (j && j.usdCny != null) ? j.usdCny : null;
+      if (usdCny == null){ $('fxBody').innerHTML = '<span class="err">汇率加载失败</span>'; return; }
+      const cnyToUsd = 1 / usdCny;
+      const d = j.date ? j.date : '';
       $('fxBody').innerHTML =
-        `<div class="row top"><span>1 元(人民币) ≈</span><b>${fmt(cnyToCur)} ${code}</b></div>` +
-        `<div class="row"><span>1 ${code} ≈</span><b>${fmt(curToCny)} 元(人民币)</b></div>` +
-        `<div class="row"><span>1 美元 ≈</span><b>${fmt(usdToCny)} 元(人民币)</b></div>` +
-        `<div class="row"><span>1 美元 ≈</span><b>${fmt(usdToCur)} ${code}</b></div>` +
-        `<span class="fx-update">更新：${j.time_last_update_utc}</span>`;
+        `<div class="row top"><span>1 美元 ≈</span><b>${fmt(usdCny)} 元(人民币)</b></div>` +
+        `<div class="row"><span>1 元(人民币) ≈</span><b>${fmt(cnyToUsd)} 美元</b></div>` +
+        (cur && cur.code ? `<div class="row"><span>当地货币</span><b>${esc(cur.code)}（${esc(cur.symbol || '')}）</b></div>` : '') +
+        `<span class="fx-update">来源：央行中间价 · ${d}</span>`;
     }
     function loadFX(){
-      const code = cur ? cur.code : null;
-      if (!code){ $('fxBody').innerHTML = '<span class="err">该国货币暂无汇率</span>'; return; }
-      // 当日汇率缓存（localStorage），重复访问秒开、同日内离线可用
-      const dayKey = 'fx_' + code;
+      // 与产品价格页同源：读取 fx_rate.json（中国人民银行授权 · 人民币汇率中间价），不再使用 er-api 市场汇率
+      const dayKey = 'fx_cny';
       try {
         const cached = JSON.parse(localStorage.getItem(dayKey) || 'null');
         const today = new Date().toISOString().slice(0,10);
-        if (cached && cached.date === today && cached.j && cached.j.rates){ renderFX(cached.j, code); return; }
+        if (cached && cached.date === today && cached.j && cached.j.usdCny != null){ renderFX(cached.j); return; }
       } catch(e){}
-      fetch('https://open.er-api.com/v6/latest/CNY')
+      fetch('fx_rate.json', { cache: 'no-store' })
         .then(r => r.json()).then(j => {
-          try { localStorage.setItem(dayKey, JSON.stringify({ date: new Date().toISOString().slice(0,10), j })); } catch(e){}
-          renderFX(j, code);
+          try { localStorage.setItem(dayKey, JSON.stringify({ date: (j.date || new Date().toISOString().slice(0,10)), j })); } catch(e){}
+          renderFX(j);
         }).catch(() => { $('fxBody').innerHTML = '<span class="err">汇率加载失败（网络受限）</span>'; });
     }
     function fmt(n){ return (n==null || isNaN(n)) ? '—' : Number(n).toLocaleString('zh-CN', {maximumFractionDigits:4}); }
