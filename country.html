@@ -111,7 +111,7 @@
   }
   .map-toolbar button:hover{ border-color:var(--accent); }
   .map-toolbar button.active{ background:rgba(56,189,248,.32); border-color:var(--accent); color:#fff; }
-  /* 工具栏下拉分组：一级按钮[位点搜寻]/[路线规划]/[视图] → 点开显示子按钮，缓解按钮过多拥挤 */
+  /* 工具栏下拉分组：一级按钮[位点搜寻]/[路线规划] → 点开显示子按钮；多点追踪/静态锁图为顶层独立按钮（缓解按钮过多拥挤） */
   .tb-group{ position:relative; display:inline-flex; }
   .tb-parent{ display:inline-flex; align-items:center; gap:6px; }
   .tb-parent .chev{ font-size:10px; line-height:1; opacity:.7; transition:transform .2s; }
@@ -393,13 +393,8 @@
             <button id="routelist">路线规划清单</button>
           </div>
         </div>
-        <div class="tb-group">
-          <button class="tb-parent" data-group="view">视图 <span class="chev">▾</span></button>
-          <div class="tb-menu" data-group="view">
-            <button id="multitrack">开启多点追踪</button>
-            <button id="staticlock">开启静态锁图</button>
-          </div>
-        </div>
+        <button id="multitrack">开启多点追踪</button>
+        <button id="staticlock">开启静态锁图</button>
       </div>
       <div id="map"><div id="depotOverlay" style="display:none;position:absolute;inset:0;z-index:4;cursor:crosshair"></div></div>
       <div id="inset" class="map-inset" style="display:none;"></div>
@@ -455,6 +450,6 @@
   <script defer src="d3.v7.min.js"></script>
   <script defer src="topojson-client.min.js"></script>
   <script defer src="country_meta.js"></script>
-  <script defer src="app.js?v=202608061304"></script>
+  <script defer src="app.js?v=202608061309"></script>
 </body>
 </html>
