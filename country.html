@@ -111,7 +111,7 @@
   }
   .map-toolbar button:hover{ border-color:var(--accent); }
   .map-toolbar button.active{ background:rgba(56,189,248,.32); border-color:var(--accent); color:#fff; }
-  /* 工具栏下拉分组：一级按钮[位点搜寻]/[路线规划] → 点开显示子按钮；多点追踪/静态锁图为顶层独立按钮（缓解按钮过多拥挤） */
+  /* 工具栏下拉分组：一级按钮[位点显示]/[路线规划] → 点开显示子按钮；多点追踪/静态锁图为顶层独立按钮（路线规划置最右，缓解按钮过多拥挤） */
   .tb-group{ position:relative; display:inline-flex; }
   .tb-parent{ display:inline-flex; align-items:center; gap:6px; }
   .tb-parent .chev{ font-size:10px; line-height:1; opacity:.7; transition:transform .2s; }
@@ -275,7 +275,7 @@
     .cust-stat{ font-size:10px; padding:4px 8px; right:54px; }
     .map-status{ font-size:10px; padding:4px 8px; max-width:55%; }
   }
-  /* 路线规划清单弹窗（右上角浮动小窗，玻璃拟态） */
+  /* 路线轨迹清单弹窗（右上角浮动小窗，玻璃拟态） */
   .route-list-panel{
     position:absolute; top:64px; right:14px; width:300px; max-height:72vh; z-index:20;
     display:flex; flex-direction:column; overflow:hidden;
@@ -380,7 +380,7 @@
     <section class="mapwrap">
       <div class="map-toolbar">
         <div class="tb-group">
-          <button class="tb-parent" data-group="marker">位点搜寻 <span class="chev">▾</span></button>
+          <button class="tb-parent" data-group="marker">位点显示 <span class="chev">▾</span></button>
           <div class="tb-menu" data-group="marker">
             <button id="custtoggle" class="active">所有客户位点</button>
             <button id="hideunsel">保留已选客户</button>
@@ -389,17 +389,17 @@
             <button id="adm2toggle">二级行政区域展开</button>
           </div>
         </div>
-        <div class="tb-group">
-          <button class="tb-parent" data-group="route">路线规划 <span class="chev">▾</span></button>
-          <div class="tb-menu" data-group="route">
-            <button id="selectDepot">选取计划位置</button>
-            <button id="routeplan">开启路线规划</button>
-            <button id="routelist">路线规划清单</button>
-          </div>
-        </div>
         <span class="tb-sep" aria-hidden="true"></span>
         <button id="multitrack" class="tb-standalone">开启多点追踪</button>
         <button id="staticlock" class="tb-standalone">开启静态锁图</button>
+        <div class="tb-group">
+          <button class="tb-parent" data-group="route">路线规划 <span class="chev">▾</span></button>
+          <div class="tb-menu" data-group="route">
+            <button id="selectDepot">设立出发点位</button>
+            <button id="routeplan">描绘路线轨迹</button>
+            <button id="routelist">路线轨迹清单</button>
+          </div>
+        </div>
       </div>
       <div id="map"><div id="depotOverlay" style="display:none;position:absolute;inset:0;z-index:4;cursor:crosshair"></div></div>
       <div id="inset" class="map-inset" style="display:none;"></div>
@@ -412,7 +412,7 @@
       <div id="custStat" class="cust-stat">信息总计 <b>0</b> 个 · 位置统计 <b>0</b> 个</div>
       <div id="routeListPanel" class="route-list-panel" style="display:none;">
         <div class="rl-head">
-          <span id="routeListTitle" class="rl-title">路线规划清单</span>
+          <span id="routeListTitle" class="rl-title">路线轨迹清单</span>
           <button id="routeListClose" class="rl-close" title="关闭">×</button>
         </div>
         <div class="rl-modes">
@@ -455,6 +455,6 @@
   <script defer src="d3.v7.min.js"></script>
   <script defer src="topojson-client.min.js"></script>
   <script defer src="country_meta.js"></script>
-  <script defer src="app.js?v=202608061345"></script>
+  <script defer src="app.js?v=202608061430"></script>
 </body>
 </html>
