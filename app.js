@@ -471,12 +471,12 @@ window.addEventListener("unhandledrejection", function(e){
         applyListFilter();                                                     // 区域筛选 + 搜索 → 重置为全部（按当前标签：客户/医院）
         if (_hideUnselected){                                                  // 恢复「显示全部客户」
           _hideUnselected = false;
-          const hu = $('hideunsel'); if (hu){ hu.classList.remove('active'); hu.textContent = '隐藏未选客户'; }
+          const hu = $('hideunsel'); if (hu) hu.classList.remove('active');
           applyHideUnselected();
         }
         if (_hideUnselectedHosp){                                             // 恢复「显示全部医院」
           _hideUnselectedHosp = false;
-          const hhu = $('hideunselHosp'); if (hhu){ hhu.classList.remove('active'); hhu.textContent = '隐藏未选医院'; }
+          const hhu = $('hideunselHosp'); if (hhu) hhu.classList.remove('active');
           applyHideUnselectedHosp();
         }
         if (_routeListOpen) closeRouteList();                                  // 关闭路线规划清单弹窗
@@ -503,12 +503,12 @@ window.addEventListener("unhandledrejection", function(e){
         }
         if (!_custVisible){                                                    // 恢复客户位点显示
           _custVisible = true;
-          const ct = $('custtoggle'); if (ct){ ct.classList.add('active'); ct.textContent = '隐藏客户位点'; }
+          const ct = $('custtoggle'); if (ct) ct.classList.add('active');
           if (_gCust) _gCust.style('display', null);
         }
         if (!_hospVisible){                                                    // 恢复医院位点显示
           _hospVisible = true;
-          const ht = $('hosptoggle'); if (ht){ ht.classList.add('active'); ht.textContent = '隐藏医院位点'; }
+          const ht = $('hosptoggle'); if (ht) ht.classList.add('active');
           if (_gHosp) _gHosp.style('display', null);
         }
         if (showAdm2 !== _showAdm2Init && $('adm2toggle')){                    // 二级行政区域回到初始默认态
@@ -519,16 +519,14 @@ window.addEventListener("unhandledrejection", function(e){
       $('custtoggle').onclick = function(){
         _custVisible = !_custVisible;
         this.classList.toggle('active', _custVisible);
-        this.textContent = _custVisible ? '隐藏客户位点' : '显示客户位点';
         if (_gCust) _gCust.style('display', _custVisible ? null : 'none');
         if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
         if (!_custVisible){ clearCustomerHighlight(); _embossRemoveBySource('customer'); }
       };
-      // [显示/隐藏医院位点]：默认显示。医院点 = 圆内红十字，区别于客户绿点
+      // [医院位点]：默认显示。医院点 = 圆内红十字，区别于客户绿点
       $('hosptoggle').onclick = function(){
         _hospVisible = !_hospVisible;
         this.classList.toggle('active', _hospVisible);
-        this.textContent = _hospVisible ? '隐藏医院位点' : '显示医院位点';
         if (_gHosp) _gHosp.style('display', _hospVisible ? null : 'none');
         if (!_hospVisible){ clearHospitalHighlight(); }
       };
@@ -564,14 +562,12 @@ window.addEventListener("unhandledrejection", function(e){
       $('hideunsel').onclick = function(){
         _hideUnselected = !_hideUnselected;
         this.classList.toggle('active', _hideUnselected);
-        this.textContent = _hideUnselected ? '显示全部客户' : '隐藏未选客户';
         applyHideUnselected();
       };
-      // [隐藏未选医院]：默认关闭。开启 → 仅显示已选中(高亮)医院，隐藏其余所有红点
+      // [未选医院]：默认关闭。开启 → 仅显示已选中(高亮)医院，隐藏其余所有红点
       if ($('hideunselHosp')) $('hideunselHosp').onclick = function(){
         _hideUnselectedHosp = !_hideUnselectedHosp;
         this.classList.toggle('active', _hideUnselectedHosp);
-        this.textContent = _hideUnselectedHosp ? '显示全部医院' : '隐藏未选医院';
         applyHideUnselectedHosp();
       };
       // [选取计划位置]：进入选点模式 → 用户在地图上点击任意位置生成一面小红旗，作为路线规划的固定出发点与返回点
@@ -1127,7 +1123,7 @@ window.addEventListener("unhandledrejection", function(e){
         _topo = topo; renderProvinces(src);
         // ADM2：默认隐藏；懒加载国（ru/au 等大体量）进图不预载，点击按钮时才拉取（IndexedDB 缓存二次秒开）
         if (_adm2Lazy){
-          const b = $('adm2toggle'); b.classList.remove('active'); b.textContent = '点击加载二级行政区域';
+          const b = $('adm2toggle'); b.classList.remove('active');
           // 进图即显示说明栏的二级行政区域数量须等加载后补全；此处先留 ADM1 说明
         } else {
           // 非懒加载国：默认隐藏，加载完成预载数据（点击按钮即时显示）；无数据则回退按钮
@@ -1138,7 +1134,7 @@ window.addEventListener("unhandledrejection", function(e){
             const _fc2cnt = (_topo2.type === 'Topology') ? _topo2.objects[Object.keys(_topo2.objects)[0]].geometries.length : _topo2.features.length;
             setStatus(_fc2cnt);   // 始终在说明栏显示二级行政区域数量（即便默认隐藏）
               if (showAdm2) renderAdm2();
-              else { const b = $('adm2toggle'); b.classList.remove('active'); b.textContent = '显示二级行政区域';
+              else { const b = $('adm2toggle'); b.classList.remove('active');
                 _requestIdle(() => { if (!showAdm2 && !_lodAdm2 && _gAdm2 && _topo2 && !adm2IsBuilt()) buildAdm2LayerChunked(true); });  // 浏览器空闲预构建隐藏层（LOD 大体量国跳过，避免加载即建 2457 path 又隐藏）
               }
             } else if (_adm2Chunked){
@@ -1146,11 +1142,11 @@ window.addEventListener("unhandledrejection", function(e){
               assignRegions();
               const total = (_adm2Index && _adm2Index.states) ? _adm2Index.states.reduce((a, s) => a + s.count, 0) : 0;
               setStatus(total);   // 说明栏显示二级行政区域总数（即便尚未拉取）
-              const b = $('adm2toggle'); b.classList.remove('active'); b.textContent = '显示二级行政区域';
+              const b = $('adm2toggle'); b.classList.remove('active');
               if (showAdm2) updateChunks();   // 已默认开启 → 按当前视口拉取可见州细节（否则等放大触发）
               // 注意：分块国不空闲预载整文件（违背矢量瓦片初衷），仅放大到某州才拉该州 chunk
             } else {
-              const b = $('adm2toggle'); b.classList.remove('active'); b.textContent = '显示二级行政区域'; showAdm2 = false;
+              const b = $('adm2toggle'); b.classList.remove('active'); showAdm2 = false;
               setStatus('暂无');
             }
           });
@@ -1205,7 +1201,6 @@ window.addEventListener("unhandledrejection", function(e){
     $('adm2toggle').onclick = async function(){
       showAdm2 = !showAdm2;
       this.classList.toggle('active', showAdm2);
-      this.textContent = showAdm2 ? '隐藏二级行政区域' : '显示二级行政区域';
       if (!_gAdm2) return;
       if (showAdm2){
         // ADM2 开启时：禁用 ADM1 prov-fill 的指针事件，杜绝 ADM2 透明内部点击穿透到 ADM1 选中一级行政区域
@@ -1232,7 +1227,7 @@ window.addEventListener("unhandledrejection", function(e){
           }
           else {
             setStatus('暂无');
-            showAdm2 = false; this.classList.remove('active'); this.textContent = '显示二级行政区域';
+            showAdm2 = false; this.classList.remove('active');
             _provFill.forEach(n => n.style.pointerEvents = '');
           }
         }
@@ -1582,7 +1577,7 @@ window.addEventListener("unhandledrejection", function(e){
     function highlightHospital(id, opts){
       opts = opts || {};
       const doZoom = (opts.doZoom !== false);
-      if (!_hospVisible && _gHosp){ _hospVisible = true; _gHosp.style('display', null); const b=$('hosptoggle'); if(b){ b.classList.add('active'); b.textContent='隐藏医院位点'; } }
+      if (!_hospVisible && _gHosp){ _hospVisible = true; _gHosp.style('display', null); const b=$('hosptoggle'); if(b) b.classList.add('active'); }
       const sel = (_gHosp) ? _gHosp.selectAll('g.hosp-pt-g').filter(function(){ return +this.getAttribute('data-id') === id; }) : d3.select(null);
       const node = sel.node();
       const nowHl = node ? node.classList.contains('hosp-hl') : false;
@@ -2317,7 +2312,7 @@ window.addEventListener("unhandledrejection", function(e){
     function highlightCustomer(id, opts){
       opts = opts || {};
       const doZoom = (opts.doZoom !== false);   // 默认 true：点击检索行 / 世界地图跳转时自动放大定位；点击地图黄点传 false（仅高亮+滚动，不强制放大）
-      if (!_custVisible && _gCust){ _custVisible = true; _gCust.style('display', null); const b=$('custtoggle'); if(b){ b.classList.add('active'); b.textContent='隐藏客户位点'; } }
+      if (!_custVisible && _gCust){ _custVisible = true; _gCust.style('display', null); const b=$('custtoggle'); if(b) b.classList.add('active'); }
       // 即便该客户没有地图圆点（无坐标），也允许“行选中”执行；无节点时仅做行高亮、不做圆点切换
       const sel = (_gCust) ? _gCust.selectAll('g.cust-pt-g').filter(function(){ return +this.getAttribute('data-id') === id; }) : d3.select(null);
       const node = sel.node();
