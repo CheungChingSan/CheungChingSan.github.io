@@ -179,25 +179,30 @@ window.addEventListener("unhandledrejection", function(e){
 
     // —— 3. 汇率 ——
     // 美元兑人民币：权威采用 fx_rate.json（央行中间价），与产品价格页同源同值（不回退市场源）。
-    // 当地货币汇率：fx_rate.json 不携带，故以 er-api 全币种为补充，并用「美元兑人民币」为桥接推导，
-    //   既恢复 人民币:当地货币 / 美元:当地货币 两行，又保证与价格页一致的美元兑人民币数值不被市场源污染。
+    // 当地货币汇率：fx_rate.json 不携带，故以 er-api 全币种为补充，并用「美元兑人民币」为桥接推导。
+    //   展示顺序按用户优先级：① 人民币兑当地货币 → ② 当地货币兑人民币 → ③ 美元兑当地货币 → ④ 人民币兑美元。
     let _fxDate = '';
     function renderFX(usdCny, local){
+      // 汇率展示顺序（用户指定优先级）：
+      //   ① 人民币兑当地货币 → ② 当地货币兑人民币 → ③ 美元兑当地货币 → ④ 人民币兑美元
       const cnyToUsd = 1 / usdCny;
       const d = _fxDate || '';
-      let html =
-        `<div class="row top"><span>1 美元 ≈</span><b>${fmt(usdCny)} 元(人民币)</b></div>` +
-        `<div class="row"><span>1 元(人民币) ≈</span><b>${fmt(cnyToUsd)} 美元</b></div>`;
+      let html = '';
       if (local && local.cnyToCur != null){
-        const cnyToCur = local.cnyToCur;
-        const curToCny = 1 / cnyToCur;
-        const usdToCur = usdCny * cnyToCur;   // 以美元兑人民币为桥接，与价格页数值自洽
-        html +=
-          `<div class="row"><span>1 元(人民币) ≈</span><b>${fmt(cnyToCur)} ${esc(local.code)}</b></div>` +
+        const cnyToCur = local.cnyToCur;          // 1 元(人民币) ≈ ? 当地货币
+        const curToCny = 1 / cnyToCur;            // 1 当地货币 ≈ ? 元(人民币)
+        const usdToCur = usdCny * cnyToCur;       // 以美元兑人民币为桥接，与价格页数值自洽
+        html =
+          `<div class="row top"><span>1 元(人民币) ≈</span><b>${fmt(cnyToCur)} ${esc(local.code)}</b></div>` +
           `<div class="row"><span>1 ${esc(local.code)} ≈</span><b>${fmt(curToCny)} 元(人民币)</b></div>` +
-          `<div class="row"><span>1 美元 ≈</span><b>${fmt(usdToCur)} ${esc(local.code)}</b></div>`;
-      } else if (cur && cur.code){
-        html += `<div class="row"><span>当地货币</span><b>${esc(cur.code)}（${esc(cur.symbol || '')}）</b></div>`;
+          `<div class="row"><span>1 美元 ≈</span><b>${fmt(usdToCur)} ${esc(local.code)}</b></div>` +
+          `<div class="row"><span>1 元(人民币) ≈</span><b>${fmt(cnyToUsd)} 美元</b></div>`;
+      } else {
+        // 无当地货币汇率时，仅显示人民币兑美元（美元兑人民币经桥接自洽）
+        html += `<div class="row top"><span>1 元(人民币) ≈</span><b>${fmt(cnyToUsd)} 美元</b></div>`;
+        if (cur && cur.code){
+          html += `<div class="row"><span>当地货币</span><b>${esc(cur.code)}（${esc(cur.symbol || '')}）</b></div>`;
+        }
       }
       html += `<span class="fx-update">来源：央行中间价(美元兑人民币)${d ? ' · ' + d : ''}</span>`;
       $('fxBody').innerHTML = html;
@@ -210,7 +215,7 @@ window.addEventListener("unhandledrejection", function(e){
           const usdCny = (j && j.usdCny != null) ? j.usdCny : null;
           if (usdCny == null){ $('fxBody').innerHTML = '<span class="err">汇率加载失败</span>'; return; }
           _fxDate = j.date ? j.date : new Date().toISOString().slice(0,10);
-          renderFX(usdCny, null);   // 先渲染美元兑人民币（立即可见、与价格页一致）
+          renderFX(usdCny, null);   // 先渲染人民币兑美元（立即可见、与价格页一致；当地货币行待 er-api 回调补全）
           // 2) 当地货币汇率（er-api 全币种补充）：以美元兑人民币为桥接推导，不破坏价格页一致性
           const code = cur ? cur.code : code0;
           if (!code){ return; }
