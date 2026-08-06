@@ -218,6 +218,7 @@ window.addEventListener("unhandledrejection", function(e){
   let _hoverRegion = null;        // 悬停(瞬时)区域 {feature,type,name} 或 null
   let _staticLock = false;        // 静态锁图：默认关闭。开启 → 禁用悬停高亮/3D浮雕 + 锁住地图(无滚轮缩放/拖拽)
   let _hideUnselected = false;   // 隐藏未选客户：默认关闭。开启 → 仅显示已选中(绿点)客户，隐藏其余所有黄点
+  let _hideUnselectedHosp = false;   // 隐藏未选医院：默认关闭。开启 → 仅显示已选中(高亮)医院，隐藏其余所有红点
   let _routeOn = false;          // 路线规划：默认关闭。开启 → 在可见客户点间以虚线连成一条「闭合最短」路线（Closed TSP）
   let _gRoute = null;            // 路线图层（置于 zoom 组 g 内、客户点之下，随地图同步变换）
   let _gDepot = null, _depotInner = null;  // 路线起点红旗图层 / 内部缩放抵消组
@@ -473,6 +474,11 @@ window.addEventListener("unhandledrejection", function(e){
           const hu = $('hideunsel'); if (hu){ hu.classList.remove('active'); hu.textContent = '隐藏未选客户'; }
           applyHideUnselected();
         }
+        if (_hideUnselectedHosp){                                             // 恢复「显示全部医院」
+          _hideUnselectedHosp = false;
+          const hhu = $('hideunselHosp'); if (hhu){ hhu.classList.remove('active'); hhu.textContent = '隐藏未选医院'; }
+          applyHideUnselectedHosp();
+        }
         if (_routeListOpen) closeRouteList();                                  // 关闭路线规划清单弹窗
         if (_routeOn || _depot){                                               // 关闭路线规划 + 清除出发点红旗
           _routeOn = false;
@@ -560,6 +566,13 @@ window.addEventListener("unhandledrejection", function(e){
         this.classList.toggle('active', _hideUnselected);
         this.textContent = _hideUnselected ? '显示全部客户' : '隐藏未选客户';
         applyHideUnselected();
+      };
+      // [隐藏未选医院]：默认关闭。开启 → 仅显示已选中(高亮)医院，隐藏其余所有红点
+      if ($('hideunselHosp')) $('hideunselHosp').onclick = function(){
+        _hideUnselectedHosp = !_hideUnselectedHosp;
+        this.classList.toggle('active', _hideUnselectedHosp);
+        this.textContent = _hideUnselectedHosp ? '显示全部医院' : '隐藏未选医院';
+        applyHideUnselectedHosp();
       };
       // [选取计划位置]：进入选点模式 → 用户在地图上点击任意位置生成一面小红旗，作为路线规划的固定出发点与返回点
       function setSelectDepotMode(active){
@@ -1550,6 +1563,7 @@ window.addEventListener("unhandledrejection", function(e){
       _gHosp.style('display', _hospVisible ? null : 'none');
       computeHospOffsets();
       updateHospZoom(_curK || 1);
+      applyHideUnselectedHosp();   // 重绘后重新应用「隐藏未选医院」：仅保留选中红点
     }
     function showHospTip(r){
       const tip = $('mapTip');
@@ -1593,6 +1607,7 @@ window.addEventListener("unhandledrejection", function(e){
         const rec = (window.__hospList || []).find(x => x.__id === id);
         if (rec && rec.lat != null && rec.lng != null) zoomToPoint(rec.lat, rec.lng);
       }
+      applyHideUnselectedHosp();   // 选中态变化后同步“隐藏未选医院”：仅保留高亮红点，隐藏其余
     }
     function loadHospitals(){
       fetch('hospitals.json').then(r => r.json()).then(data => {
@@ -1787,6 +1802,25 @@ window.addEventListener("unhandledrejection", function(e){
         tr.style.display = (_hideUnselected && !isSel) ? 'none' : null;
       });
       if (_routeOn) rebuildRoute();   // 点集变化（隐藏/显示）→ 路线需重算
+    }
+    // [隐藏未选医院]：与 applyHideUnselected 同款，作用于医院红点(_hospEls / _hlHospIds)
+    function applyHideUnselectedHosp(){
+      if (!_gHosp || !_hospEls.length) return;
+      const isSelected = (idv) => _hlHospIds.has(idv) || _hlHospIds.has(+idv) || _hlHospIds.has(String(idv));
+      _hospEls.forEach(m => {
+        if (!m || !m.el || !m.rec) return;
+        const isSel = isSelected(m.rec.__id);
+        m.el.style('display', (_hideUnselectedHosp && !isSel) ? 'none' : null);
+      });
+      // 医院检索表行：未选中则隐藏（保留选中行）
+      if (_activeTab === 'hosp'){
+        const body = document.querySelector('#custBody');
+        if (body) body.querySelectorAll('tr').forEach(tr => {
+          const idv = tr.getAttribute('data-id');
+          const isSel = isSelected(idv);
+          tr.style.display = (_hideUnselectedHosp && !isSel) ? 'none' : null;
+        });
+      }
     }
     // —— 路线规划：在可见客户点间连成一条「闭合最短路线」——
     // 用户要求：去掉起终点，把所有点连成一个封闭图形，使总周长最短。
@@ -2329,6 +2363,23 @@ window.addEventListener("unhandledrejection", function(e){
     }
 
     loadHolidays(); loadFX(); loadProvinces(); loadCustomers(); loadHospitals();
+    // 工具栏下拉分组：点一级按钮展开子按钮，点外部/其它分组收起；点子按钮不收起（便于连续切换）
+    (function bindToolbarMenus(){
+      const groups = Array.prototype.slice.call(document.querySelectorAll('.tb-group'));
+      if (!groups.length) return;
+      groups.forEach(g => {
+        const parent = g.querySelector('.tb-parent');
+        const menu = g.querySelector('.tb-menu');
+        if (parent) parent.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const willOpen = !g.classList.contains('open');
+          groups.forEach(o => o.classList.remove('open'));
+          g.classList.toggle('open', willOpen);
+        });
+        if (menu) menu.addEventListener('click', (e) => { e.stopPropagation(); });   // 阻止冒泡到 document → 子按钮点击后菜单保持展开
+      });
+      document.addEventListener('click', () => { groups.forEach(o => o.classList.remove('open')); });
+    })();
 
     // —— 看门狗：若地图 SVG 被外部脚本意外移除（如预览平台重写 DOM），自动重建 ——
     (function wd(){
