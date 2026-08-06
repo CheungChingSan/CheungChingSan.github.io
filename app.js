@@ -412,6 +412,20 @@ window.addEventListener("unhandledrejection", function(e){
             const m = _routePts[hasDepot ? idx - 1 : idx];
             return routePos(m, k);
           });
+        },
+        // 回归测试钩子：模拟搜索栏信息行点击 + 读取客户位点显隐状态（验证「关闭所有点位后点行仅显示选中」）
+        highlightCustomerById(id){ if (typeof highlightCustomer === 'function') highlightCustomer(id); return this; },
+        custState(){
+          const ct = document.querySelector('#custtoggle');
+          const hu = document.querySelector('#hideunsel');
+          let selVisible = null, otherHidden = null;
+          if (_gCust && _custEls.length){
+            const selEl = _gCust.selectAll('g.cust-pt-g').filter(function(){ return _hlIds.has(+this.getAttribute('data-id')); }).node();
+            const otherEl = _gCust.selectAll('g.cust-pt-g').filter(function(){ return !_hlIds.has(+this.getAttribute('data-id')); }).node();
+            selVisible = selEl ? (selEl.style.display !== 'none') : null;
+            otherHidden = otherEl ? (otherEl.style.display === 'none') : null;
+          }
+          return { visible:_custVisible, hideUnselected:_hideUnselected, custToggleActive: !!(ct&&ct.classList.contains('active')), hideunselActive: !!(hu&&hu.classList.contains('active')), custPoints:_custEls.length, selVisible, otherHidden };
         }
       };
 
@@ -522,6 +536,11 @@ window.addEventListener("unhandledrejection", function(e){
         if (_gCust) _gCust.style('display', _custVisible ? null : 'none');
         if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
         if (!_custVisible){ clearCustomerHighlight(); _embossRemoveBySource('customer'); }
+        else if (_hideUnselected){   // 开启「显示所有客户位点」时，自动退出「保留已选客户」筛选，确保真正全部可见（不残留只显示选中态）
+          _hideUnselected = false;
+          const hu = $('hideunsel'); if (hu) hu.classList.remove('active');
+          applyHideUnselected();
+        }
       };
       // [医院位点]：默认显示。医院点 = 圆内红十字，区别于客户绿点
       $('hosptoggle').onclick = function(){
@@ -529,6 +548,11 @@ window.addEventListener("unhandledrejection", function(e){
         this.classList.toggle('active', _hospVisible);
         if (_gHosp) _gHosp.style('display', _hospVisible ? null : 'none');
         if (!_hospVisible){ clearHospitalHighlight(); }
+        else if (_hideUnselectedHosp){   // 开启「显示所有医院位点」时，自动退出「保留已选医院」筛选
+          _hideUnselectedHosp = false;
+          const hu = $('hideunselHosp'); if (hu) hu.classList.remove('active');
+          applyHideUnselectedHosp();
+        }
       };
       // [客户检索 / 医院检索 切换]
       if ($('tabCust')) $('tabCust').onclick = () => setTab('cust');
@@ -1577,7 +1601,8 @@ window.addEventListener("unhandledrejection", function(e){
     function highlightHospital(id, opts){
       opts = opts || {};
       const doZoom = (opts.doZoom !== false);
-      if (!_hospVisible && _gHosp){ _hospVisible = true; _gHosp.style('display', null); const b=$('hosptoggle'); if(b) b.classList.add('active'); }
+      // 关闭「所有医院位点」后点击信息行：进入「保留已选医院」模式，仅显示选中红点（其余由下方 applyHideUnselectedHosp 隐藏）
+      if (!_hospVisible && _gHosp){ _hideUnselectedHosp = true; const hu=$('hideunselHosp'); if(hu) hu.classList.add('active'); _gHosp.style('display', null); }
       const sel = (_gHosp) ? _gHosp.selectAll('g.hosp-pt-g').filter(function(){ return +this.getAttribute('data-id') === id; }) : d3.select(null);
       const node = sel.node();
       const nowHl = node ? node.classList.contains('hosp-hl') : false;
@@ -2312,7 +2337,8 @@ window.addEventListener("unhandledrejection", function(e){
     function highlightCustomer(id, opts){
       opts = opts || {};
       const doZoom = (opts.doZoom !== false);   // 默认 true：点击检索行 / 世界地图跳转时自动放大定位；点击地图黄点传 false（仅高亮+滚动，不强制放大）
-      if (!_custVisible && _gCust){ _custVisible = true; _gCust.style('display', null); const b=$('custtoggle'); if(b) b.classList.add('active'); }
+      // 关闭「所有客户位点」后点击信息行：不应恢复全部，应进入「保留已选客户」模式——仅显示该行点位（其余由下方 applyHideUnselected 隐藏）
+      if (!_custVisible && _gCust){ _hideUnselected = true; const hu=$('hideunsel'); if(hu) hu.classList.add('active'); _gCust.style('display', null); }
       // 即便该客户没有地图圆点（无坐标），也允许“行选中”执行；无节点时仅做行高亮、不做圆点切换
       const sel = (_gCust) ? _gCust.selectAll('g.cust-pt-g').filter(function(){ return +this.getAttribute('data-id') === id; }) : d3.select(null);
       const node = sel.node();
