@@ -526,6 +526,7 @@ window.addEventListener("unhandledrejection", function(e){
       $('zreset').onclick = () => {
         svg.transition().duration(350).call(zoom.transform, d3.zoomIdentity);   // 缩放/平移归位（默认全览视图）
         clearCustomerHighlight();                                              // 清除客户黄点 + 行选中高亮
+        clearHospitalHighlight();                                             // 清除医院红点 + 行选中高亮（与上面对称；之前漏调导致重置后医院信息行仍高亮）
         _embossRegions.clear(); _hoverRegion = null; renderEmboss();           // 清空选中行政区域 3D 浮雕
         reapplyRegionSel();                                                    // 清空一级/二级行政区选中态
         const cs = $('custSearch'); if (cs) cs.value = '';                     // 清空搜索框
