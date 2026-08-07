@@ -473,7 +473,10 @@ window.addEventListener("unhandledrejection", function(e){
             custK1: r3(markerBase(mk(), 1)), hospK1: r3(markerBase(mk(), 1)),
             custK3: r3(markerBase(mk(), 3)), hospK3: r3(markerBase(mk(), 3))
           };
-        }
+        },
+        // 回归测试钩子（静态锁图 + 浮起）：选中某行政区(使其下点位浮起)，用于验证开启静态锁图后浮起标记被清除、点位贴回基准坐标
+        liftRegion(name){ const f = findAdm1Feature(name); if (f) _embossAddOrToggle('region', name, f, 'region'); return this; },
+        anyLifted(){ return (_custEls||[]).some(m => m.lifted) || (_hospEls||[]).some(m => m.lifted); }
       };
 
       // 国家地图 LOL 小手（DOM 跟随，与世界地图地球完全一致）：规避 CSS 光标拒载 + d3.zoom 拖拽握拳
@@ -724,7 +727,15 @@ window.addEventListener("unhandledrejection", function(e){
     // 保证多区域选中时所有顶面处于同一高度平面、互不遮挡，绝不出现「一层叠一层」。
     function renderEmboss(){
       if (!_gEmboss || !_path) return;
-      if (_staticLock){ _gEmboss.selectAll('*').remove(); return; }  // 静态锁图：强制无浮雕（清除一切悬停/选中浮雕）
+      if (_staticLock){
+        _gEmboss.selectAll('*').remove();   // 静态锁图：强制无浮雕（清除一切悬停/选中浮雕）
+        // 关键修复：清掉位点浮起标记并立即按当前变换贴回真实基准坐标，
+        // 否则开启锁图时正悬停/选中区域(点位浮起态)会残留 lifted，点位悬半空 → 位置偏移
+        _custEls.forEach(m => { m.lifted = false; m.liftC = null; });
+        _hospEls.forEach(m => { m.lifted = false; m.liftC = null; });
+        if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); updateHospZoom(_curK || 1); }
+        return;
+      }
       _gEmboss.selectAll('*').remove();
       const k = (_curK && _curK > 0) ? _curK : 1;
       const H = 9 / k;            // 所有区域统一高度（屏幕 ~9px，随缩放反比）
