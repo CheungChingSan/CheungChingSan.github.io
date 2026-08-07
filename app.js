@@ -433,6 +433,28 @@ window.addEventListener("unhandledrejection", function(e){
             return routePos(m, k);
           });
         },
+        // 回归测试钩子（路线随浮雕浮起同步）：断言路线每个顶点 ≡ 对应位点的 markerBase 显示坐标
+        // （经销商/医院点共用 markerBase）→ 悬停浮雕使位点浮起时路线顶点同步抬升，二者零偏移。
+        routeLiftConsistent(){
+          if (!_gRoute || !_routeOn) return { ok:true, note:'route-off' };
+          const path = _gRoute.select('path.route-line');
+          if (!path.node()) return { ok:true, note:'no-path' };
+          const d = path.attr('d') || '';
+          const nums = (d.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+          const verts = [];
+          for (let i = 0; i + 1 < nums.length; i += 2) verts.push([nums[i], nums[i + 1]]);
+          const hasDepot = !!_depot;
+          const k = _curK || 1;
+          for (let vi = 0; vi < verts.length; vi++){
+            const oi = hasDepot ? (vi === 0 ? -1 : _routeOrder[vi] - 1) : _routeOrder[vi];
+            const m = oi < 0 ? null : _routePts[oi];
+            if (!m) continue;
+            const [bx, by] = markerBase(m, k);
+            const [vx, vy] = verts[vi];
+            if (Math.abs(bx - vx) > 0.5 || Math.abs(by - vy) > 0.5) return { ok:false, id:m.rec.__id, bx, by, vx, vy };
+          }
+          return { ok:true };
+        },
         // 回归测试钩子：模拟搜索栏信息行点击 + 读取客户位点显隐状态（验证「关闭所有点位后点行仅显示选中」）
         highlightCustomerById(id){ if (typeof highlightCustomer === 'function') highlightCustomer(id); return this; },
         custState(){
@@ -734,6 +756,7 @@ window.addEventListener("unhandledrejection", function(e){
         _custEls.forEach(m => { m.lifted = false; m.liftC = null; });
         _hospEls.forEach(m => { m.lifted = false; m.liftC = null; });
         if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); updateHospZoom(_curK || 1); }
+        if (_routeOn) drawRoute(_curK || 1);   // 路线同步贴回地面（与位点浮起标记一并清除）
         return;
       }
       _gEmboss.selectAll('*').remove();
@@ -752,6 +775,7 @@ window.addEventListener("unhandledrejection", function(e){
         _custEls.forEach(m => { m.lifted = false; m.liftC = null; });
         _hospEls.forEach(m => { m.lifted = false; m.liftC = null; });
         if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); updateHospZoom(_curK || 1); }
+        if (_routeOn) drawRoute(_curK || 1);   // 路线随位点浮起状态同步重绘：无区域→路线贴回地面，与位点零偏移
         return;
       }
       // 预计算每区域的路径与质心（feature 保留用于客户点 d3.geoContains 判定）
@@ -806,6 +830,8 @@ window.addEventListener("unhandledrejection", function(e){
         });
       });
       if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); updateHospZoom(_curK || 1); }
+      if (_routeOn) drawRoute(_curK || 1);   // 关键修复：悬停/选中浮雕使位点浮起时，路线按 markerBase(=routePos)同步重绘，
+                                             // 路线顶点 ≡ 位点显示坐标(经销商/医院点共用同一 markerBase)→ 二者始终零偏移
     }
     // 瞬时悬停：设置悬停区域并刷新（选中区域仍保留）
     let _embossTimer = 0;
