@@ -448,6 +448,21 @@ window.addEventListener("unhandledrejection", function(e){
           }
           const rowsHidden = Array.from(document.querySelectorAll('.cust-table tbody tr[data-id]')).filter(tr => tr.style.display === 'none').length;
           return { visible:_custVisible, hideUnselected:_hideUnselected, custToggleActive: !!(ct&&ct.classList.contains('active')), hideunselActive: !!(hu&&hu.classList.contains('active')), custPoints:_custEls.length, selVisible, otherHidden, selCount:_hlIds.size, rowsHidden };
+        },
+        // 回归测试钩子（医院侧，镜像 custState / highlightCustomerById）：验证「关闭所有医院位点后点行仅显示选中、不自动进保留模式」
+        highlightHospitalById(id){ if (typeof highlightHospital === 'function') highlightHospital(id); return this; },
+        hospState(){
+          const ht = document.querySelector('#hosptoggle');
+          const hu = document.querySelector('#hideunselHosp');
+          let selVisible = null, otherHidden = null;
+          if (_gHosp && _hospEls.length){
+            const selEl = _gHosp.selectAll('g.hosp-pt-g').filter(function(){ return _hlHospIds.has(+this.getAttribute('data-id')); }).node();
+            const otherEl = _gHosp.selectAll('g.hosp-pt-g').filter(function(){ return !_hlHospIds.has(+this.getAttribute('data-id')); }).node();
+            selVisible = selEl ? (selEl.style.display !== 'none') : null;
+            otherHidden = otherEl ? (otherEl.style.display === 'none') : null;
+          }
+          const rowsHidden = Array.from(document.querySelectorAll('.cust-table tbody tr[data-id]')).filter(tr => tr.style.display === 'none').length;
+          return { visible:_hospVisible, hideUnselectedHosp:_hideUnselectedHosp, hospToggleActive: !!(ht&&ht.classList.contains('active')), hideunselHospActive: !!(hu&&hu.classList.contains('active')), hospPoints:_hospEls.length, selVisible, otherHidden, selCount:_hlHospIds.size, rowsHidden };
         }
       };
 
@@ -548,6 +563,7 @@ window.addEventListener("unhandledrejection", function(e){
           if (_gHosp) _gHosp.style('display', null);
         }
         applyHideUnselected();                                                // 重置后按当前状态恢复客户点位可见性（总开关/选中/保留模式）
+        applyHideUnselectedHosp();                                            // 重置后同步恢复医院点位可见性（与上面同款，避免重置后医院红点全隐）
         if (showAdm2 !== _showAdm2Init && $('adm2toggle')){                    // 二级行政区域回到初始默认态
           $('adm2toggle').click();
         }
@@ -568,13 +584,12 @@ window.addEventListener("unhandledrejection", function(e){
       $('hosptoggle').onclick = function(){
         _hospVisible = !_hospVisible;
         this.classList.toggle('active', _hospVisible);
-        if (_gHosp) _gHosp.style('display', _hospVisible ? null : 'none');
         if (!_hospVisible){ clearHospitalHighlight(); }
         else if (_hideUnselectedHosp){   // 开启「显示所有医院位点」时，自动退出「保留已选医院」筛选
           _hideUnselectedHosp = false;
           const hu = $('hideunselHosp'); if (hu) hu.classList.remove('active');
-          applyHideUnselectedHosp();
         }
+        applyHideUnselectedHosp();   // 按"总开关+选中"逐个控制医院点可见性：总开关关→仅选中点亮起；开→正常/保留模式
       };
       // [客户检索 / 医院检索 切换]
       if ($('tabCust')) $('tabCust').onclick = () => setTab('cust');
@@ -619,6 +634,11 @@ window.addEventListener("unhandledrejection", function(e){
       if ($('hideunselHosp')) $('hideunselHosp').onclick = function(){
         _hideUnselectedHosp = !_hideUnselectedHosp;
         this.classList.toggle('active', _hideUnselectedHosp);
+        if (_hideUnselectedHosp && !_hospVisible){   // 关全部医院位点后进入「保留已选医院」→ 自动点亮医院图层，仅显示已选红点
+          _hospVisible = true;
+          const ht = $('hosptoggle'); if (ht) ht.classList.add('active');
+          if (_gHosp) _gHosp.style('display', null);
+        }
         applyHideUnselectedHosp();
       };
       // [设立出发点位]：进入选点模式 → 用户在地图上点击任意位置生成一面小红旗，作为路线轨迹的固定出发点与返回点
@@ -1606,7 +1626,7 @@ window.addEventListener("unhandledrejection", function(e){
           if (_hlHospIds.has(+this.getAttribute('data-id'))) this.classList.add('hosp-hl');
         });
       }
-      _gHosp.style('display', _hospVisible ? null : 'none');
+      // 图层容器始终可见（不再整组隐藏）；各医院点可见性交由下方 applyHideUnselectedHosp 按"总开关+选中"逐点控制
       computeHospOffsets();
       updateHospZoom(_curK || 1);
       applyHideUnselectedHosp();   // 重绘后重新应用「隐藏未选医院」：仅保留选中红点
@@ -1628,8 +1648,10 @@ window.addEventListener("unhandledrejection", function(e){
     function highlightHospital(id, opts){
       opts = opts || {};
       const doZoom = (opts.doZoom !== false);
-      // 关闭「所有医院位点」后点击信息行：进入「保留已选医院」模式，仅显示选中红点（其余由下方 applyHideUnselectedHosp 隐藏）
-      if (!_hospVisible && _gHosp){ _hideUnselectedHosp = true; const hu=$('hideunselHosp'); if(hu) hu.classList.add('active'); _gHosp.style('display', null); }
+      // 关闭「所有医院位点」后点击信息行：既不恢复全部，也不自动进入「保留已选医院」模式——
+      // 仅把该行加入选中集（高亮右侧信息行），所选医院红点自动点亮、其余红点仍隐藏，右侧检索栏仍显示全部医院行，便于继续多选；
+      // 待用户选好后再手动点「保留已选医院」才进入筛选（仅显选中红点 + 收起未选行）。
+      if (!_hospVisible && _gHosp){ _gHosp.style('display', null); }   // 仅确保图层容器可见，由下方 applyHideUnselectedHosp 按"选中"逐点点亮（不恢复全部、不进筛选）
       const sel = (_gHosp) ? _gHosp.selectAll('g.hosp-pt-g').filter(function(){ return +this.getAttribute('data-id') === id; }) : d3.select(null);
       const node = sel.node();
       const nowHl = node ? node.classList.contains('hosp-hl') : false;
@@ -1868,7 +1890,10 @@ window.addEventListener("unhandledrejection", function(e){
       _hospEls.forEach(m => {
         if (!m || !m.el || !m.rec) return;
         const isSel = isSelected(m.rec.__id);
-        m.el.style('display', (_hideUnselectedHosp && !isSel) ? 'none' : null);
+        // 总开关「所有医院位点」开启 → 正常显示（保留模式则仅选中）；总开关关闭 → 仅选中点亮起
+        // （关全部后点信息行=点亮所选医院红点，不恢复全部；其余红点仍隐藏）
+        const show = _hospVisible ? !(_hideUnselectedHosp && !isSel) : isSel;
+        m.el.style('display', show ? null : 'none');
       });
       // 医院检索表行：未选中则隐藏（保留选中行）
       if (_activeTab === 'hosp'){
