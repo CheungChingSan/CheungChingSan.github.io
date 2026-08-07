@@ -598,6 +598,8 @@ window.addEventListener("unhandledrejection", function(e){
           const ht = $('hosptoggle'); if (ht) ht.classList.add('active');
           if (_gHosp) _gHosp.style('display', null);
         }
+        if (_hideUnselected){ _hideUnselected = false; const hu = $('hideunsel'); if (hu) hu.classList.remove('active'); }       // 重置：退出「保留已选客户」筛选，回到全显（维持与总开关互斥）
+        if (_hideUnselectedHosp){ _hideUnselectedHosp = false; const hu = $('hideunselHosp'); if (hu) hu.classList.remove('active'); }  // 重置：退出「保留已选医院」筛选
         applyHideUnselected();                                                // 重置后按当前状态恢复客户点位可见性（总开关/选中/保留模式）
         applyHideUnselectedHosp();                                            // 重置后同步恢复医院点位可见性（与上面同款，避免重置后医院红点全隐）
         if (showAdm2 !== _showAdm2Init && $('adm2toggle')){                    // 二级行政区域回到初始默认态
@@ -606,25 +608,36 @@ window.addEventListener("unhandledrejection", function(e){
         _saveT = null;                                                         // 重置地图返回记忆
       };
       $('custtoggle').onclick = function(){
-        _custVisible = !_custVisible;
-        this.classList.toggle('active', _custVisible);
-        if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
-        if (!_custVisible){ clearCustomerHighlight(); _embossRemoveBySource('customer'); }
-        else if (_hideUnselected){   // 开启「显示所有客户位点」时，自动退出「保留已选客户」筛选，确保真正全部可见（不残留只显示选中态）
+        if (_hideUnselected){
+          // 当前在「保留已选客户」模式（图层开、仅显选中）→ 点「所有客户位点」= 切回全显视图（图层保持开，二者互斥）
           _hideUnselected = false;
           const hu = $('hideunsel'); if (hu) hu.classList.remove('active');
+          _custVisible = true;
+          this.classList.add('active');
+        } else {
+          // 当前在全显/全关 → 切换图层总开关（开=全显，关=仅选中点亮起/隐藏其余，进入「关全部」模式，便于逐行点亮）
+          _custVisible = !_custVisible;
+          this.classList.toggle('active', _custVisible);
+          if (!_custVisible){ clearCustomerHighlight(); _embossRemoveBySource('customer'); }
         }
+        if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
         applyHideUnselected();   // 按"总开关+选中"逐个控制点位可见性：总开关关→仅选中点亮起；开→正常/保留模式
       };
       // [医院位点]：默认显示。医院点 = 圆内红十字，区别于客户绿点
       $('hosptoggle').onclick = function(){
-        _hospVisible = !_hospVisible;
-        this.classList.toggle('active', _hospVisible);
-        if (!_hospVisible){ clearHospitalHighlight(); }
-        else if (_hideUnselectedHosp){   // 开启「显示所有医院位点」时，自动退出「保留已选医院」筛选
+        if (_hideUnselectedHosp){
+          // 当前在「保留已选医院」模式（图层开、仅显选中红点）→ 点「所有医院位点」= 切回全显视图（图层保持开，二者互斥）
           _hideUnselectedHosp = false;
           const hu = $('hideunselHosp'); if (hu) hu.classList.remove('active');
+          _hospVisible = true;
+          this.classList.add('active');
+        } else {
+          // 当前在全显/全关 → 切换图层总开关（开=全显，关=仅选中点亮起/隐藏其余，进入「关全部」模式）
+          _hospVisible = !_hospVisible;
+          this.classList.toggle('active', _hospVisible);
+          if (!_hospVisible){ clearHospitalHighlight(); }
         }
+        if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
         applyHideUnselectedHosp();   // 按"总开关+选中"逐个控制医院点可见性：总开关关→仅选中点亮起；开→正常/保留模式
       };
       // [客户检索 / 医院检索 切换]
@@ -659,22 +672,22 @@ window.addEventListener("unhandledrejection", function(e){
       $('hideunsel').onclick = function(){
         _hideUnselected = !_hideUnselected;
         this.classList.toggle('active', _hideUnselected);
-        if (_hideUnselected && !_custVisible){   // 关全部点位后进入「保留已选客户」→ 自动点亮客户图层，仅显示已选点（否则点位仍 hidden）
-          _custVisible = true;
-          const ct = $('custtoggle'); if (ct) ct.classList.add('active');
-          if (_gCust) _gCust.style('display', null);
-        }
+        // 保留已选模式始终需要图层开启（仅显示选中点 + 收起未选行），故保持 _custVisible=true；
+        // 同时自动取消「所有客户位点」按钮（互斥视图：保留已选=仅显选中，所有=全显，二者不应同时挂起）
+        _custVisible = true;
+        const ct = $('custtoggle'); if (ct) ct.classList.toggle('active', !_hideUnselected);
+        if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
         applyHideUnselected();
       };
       // [未选医院]：默认关闭。开启 → 仅显示已选中(高亮)医院，隐藏其余所有红点
       if ($('hideunselHosp')) $('hideunselHosp').onclick = function(){
         _hideUnselectedHosp = !_hideUnselectedHosp;
         this.classList.toggle('active', _hideUnselectedHosp);
-        if (_hideUnselectedHosp && !_hospVisible){   // 关全部医院位点后进入「保留已选医院」→ 自动点亮医院图层，仅显示已选红点
-          _hospVisible = true;
-          const ht = $('hosptoggle'); if (ht) ht.classList.add('active');
-          if (_gHosp) _gHosp.style('display', null);
-        }
+        // 保留已选模式始终需要图层开启（仅显示选中红点 + 收起未选行），故保持 _hospVisible=true；
+        // 同时自动取消「所有医院位点」按钮（互斥视图）
+        _hospVisible = true;
+        const ht = $('hosptoggle'); if (ht) ht.classList.toggle('active', !_hideUnselectedHosp);
+        if (_gRoute) _gRoute.style('display', (_routeOn && (_custVisible || _hospVisible)) ? null : 'none');
         applyHideUnselectedHosp();
       };
       // [设立出发点位]：进入选点模式 → 用户在地图上点击任意位置生成一面小红旗，作为路线轨迹的固定出发点与返回点
