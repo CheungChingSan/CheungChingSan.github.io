@@ -180,12 +180,11 @@ window.addEventListener("unhandledrejection", function(e){
     // —— 3. 汇率 ——
     // 美元兑人民币：权威采用 fx_rate.json（央行中间价），与产品价格页同源同值（不回退市场源）。
     // 当地货币汇率：fx_rate.json 不携带，故以 er-api 全币种为补充，并用「美元兑人民币」为桥接推导。
-    //   展示顺序按用户优先级：① 人民币兑当地货币 → ② 当地货币兑人民币 → ③ 美元兑当地货币 → ④ 人民币兑美元。
+    //   展示顺序按用户优先级：① 人民币兑当地货币 → ② 当地货币兑人民币 → ③ 美元兑当地货币 → ④ 美元兑人民币。
     let _fxDate = '';
     function renderFX(usdCny, local){
       // 汇率展示顺序（用户指定优先级）：
-      //   ① 人民币兑当地货币 → ② 当地货币兑人民币 → ③ 美元兑当地货币 → ④ 人民币兑美元
-      const cnyToUsd = 1 / usdCny;
+      //   ① 人民币兑当地货币 → ② 当地货币兑人民币 → ③ 美元兑当地货币 → ④ 美元兑人民币
       const d = _fxDate || '';
       let html = '';
       if (local && local.cnyToCur != null){
@@ -196,10 +195,10 @@ window.addEventListener("unhandledrejection", function(e){
           `<div class="row top"><span>1 元(人民币) ≈</span><b>${fmt(cnyToCur)} ${esc(local.code)}</b></div>` +
           `<div class="row"><span>1 ${esc(local.code)} ≈</span><b>${fmt(curToCny)} 元(人民币)</b></div>` +
           `<div class="row"><span>1 美元 ≈</span><b>${fmt(usdToCur)} ${esc(local.code)}</b></div>` +
-          `<div class="row"><span>1 元(人民币) ≈</span><b>${fmt(cnyToUsd)} 美元</b></div>`;
+          `<div class="row"><span>1 美元 ≈</span><b>${fmt(usdCny)} 元(人民币)</b></div>`;
       } else {
-        // 无当地货币汇率时，仅显示人民币兑美元（美元兑人民币经桥接自洽）
-        html += `<div class="row top"><span>1 元(人民币) ≈</span><b>${fmt(cnyToUsd)} 美元</b></div>`;
+        // 无当地货币汇率时，仅显示美元兑人民币（与价格页同源同值）
+        html += `<div class="row top"><span>1 美元 ≈</span><b>${fmt(usdCny)} 元(人民币)</b></div>`;
         if (cur && cur.code){
           html += `<div class="row"><span>当地货币</span><b>${esc(cur.code)}（${esc(cur.symbol || '')}）</b></div>`;
         }
@@ -727,7 +726,7 @@ window.addEventListener("unhandledrejection", function(e){
       _embossRegions.forEach(r => regions.push(r));
       // 无区域：客点落回平面
       if (!regions.length){
-        _custEls.forEach(m => { m.lifted = false; m.liftedBase = null; });
+        _custEls.forEach(m => { m.lifted = false; m.liftedBase = null; m.liftC = null; });
         if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); updateHospZoom(_curK || 1); }
         return;
       }
@@ -759,7 +758,7 @@ window.addEventListener("unhandledrejection", function(e){
       });
       // 客户点抬升：先统一复位(仅属性赋值，零 geoContains)，再【仅测落在该区域自己的客户】
       // （按 assignRegions 预分组的 __adm2 → _adm2CustMap），彻底去掉逐区域对全部客户的 geoContains（零精度损失）
-      _custEls.forEach(m => { m.lifted = false; m.liftedBase = null; });
+      _custEls.forEach(m => { m.lifted = false; m.liftedBase = null; m.liftC = null; });
       items.forEach(it => {
         const nm = it.feature.properties ? (it.feature.properties.shapeName || it.feature.properties.name) : null;
         const list = (_adm2CustMap && nm) ? (_adm2CustMap.get(nm) || []) : _custEls;
@@ -767,7 +766,7 @@ window.addEventListener("unhandledrejection", function(e){
           const rec = m.rec;
           if (rec && rec.lng != null && rec.lat != null && d3.geoContains(it.feature, [+rec.lng, +rec.lat])){
             m.lifted = true;
-            m.liftedBase = [ it.c[0] + sTop*(m.base[0]-it.c[0]), (it.c[1]-H) + sTop*(m.base[1]-it.c[1]) ];
+            m.liftC = it.c;   // 仅记录区域质心；H 抬升量(屏幕恒定 9px → 内容 9/k)交给 updateCustZoom 按当前 k 实时算，避免缩放时冻结 hover 时刻 k 导致点位“飞高”位移
           }
         });
       });
@@ -1441,10 +1440,14 @@ window.addEventListener("unhandledrejection", function(e){
       const rScreen = GRAIN_R + (DOT_R - GRAIN_R) * zf;   // 屏幕半径：k=1 粒 → k=ZOOM_FULL 圆点
       const rContent = rScreen / k;                        // 内容坐标半径（在 g 内被 scale(k) 还原成屏幕 rScreen）
       const sK = sepF / k;                                  // 去重叠偏移系数：屏幕 off * sepF，转内容坐标需 /k（g 变换会再 ×k 还原成屏幕 off·sepF）
+      const LIFT_ST = 1.04;                                 // 与 renderEmboss 顶面缩放一致
+      const H = 9 / k;                                      // 3D 浮雕客户点抬升：屏幕恒定 9px → 内容坐标 9/k（随缩放反比）；实时算，不冻结 hover 时刻 k，放大地图时抬升屏幕高度恒定、不再“飞高”
       const els = _custEls;
       for (let i = 0; i < els.length; i++){
         const m = els[i]; if (!m.el) continue;
-        const b = (m.lifted && m.liftedBase) ? m.liftedBase : m.base;   // 3D 浮雕抬升时改用 liftedBase
+        const b = (m.lifted && m.liftC)
+          ? [ m.liftC[0] + LIFT_ST*(m.base[0]-m.liftC[0]), (m.liftC[1]-H) + LIFT_ST*(m.base[1]-m.liftC[1]) ]   // 抬升基坐标按当前 k 实时算（屏幕抬升恒 9px）
+          : m.base;
         const ox = (m.off ? m.off[0] : 0) * sK;
         const oy = (m.off ? m.off[1] : 0) * sK;
         m.el.attr('transform', `translate(${(b[0] + ox).toFixed(2)},${(b[1] + oy).toFixed(2)})`);
@@ -1484,7 +1487,7 @@ window.addEventListener("unhandledrejection", function(e){
           .on('mouseenter', () => showCustTip(r)).on('mouseleave', hideTip);
         const ptEl = g.select('circle.cust-pt');   // 缓存子元素引用：避免放大动画每帧重复 d3.select 子查询（性能优化）
         const hitEl = g.select('circle.cust-hit');
-        _custEls.push({ el: g, base: p, rec: r, lifted: false, liftedBase: null, off: [0, 0], ptEl, hitEl });
+        _custEls.push({ el: g, base: p, rec: r, lifted: false, liftedBase: null, liftC: null, off: [0, 0], ptEl, hitEl });
       });
       assignRegions();
       // 分块国：客户晚于某些州 chunk 到达时，回填这些已建州的客户 ADM2 归属 + 预分组（增量，零精度损失）
@@ -2135,7 +2138,10 @@ window.addEventListener("unhandledrejection", function(e){
       const zf = zoomFactor(k);
       const sepF = Math.min(1, zf * 1.8);
       const sK = sepF / k;
-      const b = (m.lifted && m.liftedBase) ? m.liftedBase : m.base;
+      const LIFT_ST = 1.04, H = 9 / k;
+      const b = (m.lifted && m.liftC)
+        ? [ m.liftC[0] + LIFT_ST*(m.base[0]-m.liftC[0]), (m.liftC[1]-H) + LIFT_ST*(m.base[1]-m.liftC[1]) ]
+        : m.base;
       const ox = (m.off ? m.off[0] : 0) * sK;
       const oy = (m.off ? m.off[1] : 0) * sK;
       return [b[0] + ox, b[1] + oy];
