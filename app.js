@@ -462,6 +462,17 @@ window.addEventListener("unhandledrejection", function(e){
           }
           const rowsHidden = Array.from(document.querySelectorAll('.cust-table tbody tr[data-id]')).filter(tr => tr.style.display === 'none').length;
           return { visible:_hospVisible, hideUnselectedHosp:_hideUnselectedHosp, hospToggleActive: !!(ht&&ht.classList.contains('active')), hideunselHospActive: !!(hu&&hu.classList.contains('active')), hospPoints:_hospEls.length, selVisible, otherHidden, selCount:_hlHospIds.size, rowsHidden };
+        },
+        // 回归测试钩子：验证「经销商点 + 医院点共用同一套 markerBase 坐标逻辑」——相同 lifted/liftC/off 下，
+        // 两类点在 k=1 与 k=3 均返回完全一致显示坐标（即悬停浮雕/缩放时永远不会漂移不同步）。
+        markerBaseCheck(){
+          const base = [100, 200], liftC = [105, 195], off = [3, -2];
+          const mk = () => ({ base, liftC, off, lifted: true });
+          const r3 = (a) => [Math.round(a[0]*1000)/1000, Math.round(a[1]*1000)/1000];
+          return {
+            custK1: r3(markerBase(mk(), 1)), hospK1: r3(markerBase(mk(), 1)),
+            custK3: r3(markerBase(mk(), 3)), hospK3: r3(markerBase(mk(), 3))
+          };
         }
       };
 
@@ -724,9 +735,10 @@ window.addEventListener("unhandledrejection", function(e){
         if (!dup) regions.push(_hoverRegion);
       }
       _embossRegions.forEach(r => regions.push(r));
-      // 无区域：客点落回平面
+      // 无区域：客户点 + 医院点均落回平面
       if (!regions.length){
-        _custEls.forEach(m => { m.lifted = false; m.liftedBase = null; m.liftC = null; });
+        _custEls.forEach(m => { m.lifted = false; m.liftC = null; });
+        _hospEls.forEach(m => { m.lifted = false; m.liftC = null; });
         if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); updateHospZoom(_curK || 1); }
         return;
       }
@@ -758,7 +770,7 @@ window.addEventListener("unhandledrejection", function(e){
       });
       // 客户点抬升：先统一复位(仅属性赋值，零 geoContains)，再【仅测落在该区域自己的客户】
       // （按 assignRegions 预分组的 __adm2 → _adm2CustMap），彻底去掉逐区域对全部客户的 geoContains（零精度损失）
-      _custEls.forEach(m => { m.lifted = false; m.liftedBase = null; m.liftC = null; });
+      _custEls.forEach(m => { m.lifted = false; m.liftC = null; });
       items.forEach(it => {
         const nm = it.feature.properties ? (it.feature.properties.shapeName || it.feature.properties.name) : null;
         const list = (_adm2CustMap && nm) ? (_adm2CustMap.get(nm) || []) : _custEls;
@@ -766,11 +778,22 @@ window.addEventListener("unhandledrejection", function(e){
           const rec = m.rec;
           if (rec && rec.lng != null && rec.lat != null && d3.geoContains(it.feature, [+rec.lng, +rec.lat])){
             m.lifted = true;
-            m.liftC = it.c;   // 仅记录区域质心；H 抬升量(屏幕恒定 9px → 内容 9/k)交给 updateCustZoom 按当前 k 实时算，避免缩放时冻结 hover 时刻 k 导致点位“飞高”位移
+            m.liftC = it.c;   // 仅记录区域质心；H 抬升量(屏幕恒定 9px → 内容 9/k)交给 markerBase 按当前 k 实时算，避免缩放时冻结 hover 时刻 k 导致点位“飞高”位移
           }
         });
       });
-      if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); }
+      // 医院点抬升：与客户点完全相同的逻辑（同一套 markerBase），悬停浮雕时两类点同步浮起、不再漂移不同步
+      _hospEls.forEach(m => { m.lifted = false; m.liftC = null; });
+      items.forEach(it => {
+        _hospEls.forEach(m => {
+          const rec = m.rec;
+          if (rec && rec.lng != null && rec.lat != null && d3.geoContains(it.feature, [+rec.lng, +rec.lat])){
+            m.lifted = true;
+            m.liftC = it.c;   // 仅记录区域质心；抬升量由 markerBase 按当前 k 实时算（与客户点同步）
+          }
+        });
+      });
+      if (_curT){ updateMarkers(_curT); updateCustZoom(_curK || 1); updateHospZoom(_curK || 1); }
     }
     // 瞬时悬停：设置悬停区域并刷新（选中区域仍保留）
     let _embossTimer = 0;
@@ -1377,11 +1400,12 @@ window.addEventListener("unhandledrejection", function(e){
     // updateCustZoom(k) 按缩放插值：k=1 时 off·zf=0（像素粒堆叠于真实位置、绝无重叠错觉），半径=GRAIN_R；
     // k→ZOOM_FULL 时 off 全量铺开、半径=DOT_R，圆点逐一可见且不重叠。彻底取代「每帧重松弛」与「手动 layoutCust 易脱节」两类问题。
     const _GA = 2.399963229728653;            // 黄金角：重合点均匀扇开
-    // 一次性计算每点恒定屏幕空间偏移 off（参考系 k=1 / t=0 下去重叠），之后不再随缩放重算
-    function computeOffsets(){
-      const els = _custEls, n = els ? els.length : 0;
+    // 统一去重叠铺开：客户与医院共用同一算法，仅「圆点半径(rDot)」与「扇开黄金角(ga)」按 kind 区分。
+    // 参考系 k=1 / t=0，算出的恒定屏幕空间偏移 off 一次性写入各点，之后不再随缩放重算（与 markerBase 铺开量协同）。
+    function computeOffsets(els, rDot, ga){
+      const n = els ? els.length : 0;
       if (!n) return;
-      const minDist = _CUST_R * 2 + 2.0;      // 屏幕像素最小间距（含 2px 间隙）
+      const minDist = rDot * 2 + 2.0;      // 屏幕像素最小间距（含 2px 间隙）
       for (let i = 0; i < n; i++){ els[i].off = [0, 0]; }
       // 1) 按基准坐标分桶：完全/极近重合的点用向日葵螺旋均匀扇开
       const buckets = {};
@@ -1397,7 +1421,7 @@ window.addEventListener("unhandledrejection", function(e){
         for (let j = 0; j < m; j++){
           const i = grp[j];
           if (j === 0){ els[i].off = [0, 0]; continue; }
-          const ang = j * _GA, rad = R * Math.sqrt(j / m);
+          const ang = j * ga, rad = R * Math.sqrt(j / m);
           els[i].off = [Math.cos(ang) * rad, Math.sin(ang) * rad];
         }
       }
@@ -1412,7 +1436,7 @@ window.addEventListener("unhandledrejection", function(e){
             if (d2 < minDist * minDist){
               let d = Math.sqrt(d2), ux, uy;
               if (d > 0.01){ ux = dx / d; uy = dy / d; }
-              else { const a = i * _GA; ux = Math.cos(a); uy = Math.sin(a); d = 0; }
+              else { const a = i * ga; ux = Math.cos(a); uy = Math.sin(a); d = 0; }
               const push = (minDist - d) / 2 + 0.05;
               els[i].off[0] -= ux * push; els[i].off[1] -= uy * push;
               els[j].off[0] += ux * push; els[j].off[1] += uy * push;
@@ -1433,28 +1457,52 @@ window.addEventListener("unhandledrejection", function(e){
     const ZOOM_MAX  = 9;            // d3.zoom scaleExtent 上限 = 最大化尺寸地图（保留常量；清单排序现直接复用 _routeOrder，不再用它做基准）
     const CUST_HIT_PX = 10;         // 透明命中区：恒定屏幕尺寸(px)，不随缩放放大 → 放大到最大也不会出现超大盲区误触发 hover
     function zoomFactor(k){ return Math.max(0, Math.min(1, (k - 1) / (ZOOM_FULL - 1))); }
+    // —— 统一位点显示坐标（客户与医院共用同一套数学，仅各自 lifted/liftC/off 字段驱动）：
+    //    3D 浮雕抬升(屏幕恒定 9px → 内容 9/k，按当前 k 实时算，不冻结 hover 时刻 k) + 去重叠铺开偏移(随 k 同步)。
+    //    客户/医院点现在走完全相同的坐标逻辑，悬停浮雕或缩放时两类点永远同步、不再各自漂移。
+    function markerBase(m, k){
+      const zf = zoomFactor(k);
+      const sepF = Math.min(1, zf * 1.8);
+      const sK = sepF / k;
+      const LIFT_ST = 1.04;        // 与 renderEmboss 顶面缩放一致
+      const H = 9 / k;             // 屏幕恒定 9px → 内容坐标 9/k（随缩放反比），实时算
+      const b = (m.lifted && m.liftC)
+        ? [ m.liftC[0] + LIFT_ST*(m.base[0]-m.liftC[0]), (m.liftC[1]-H) + LIFT_ST*(m.base[1]-m.liftC[1]) ]
+        : m.base;
+      const ox = (m.off ? m.off[0] : 0) * sK;
+      const oy = (m.off ? m.off[1] : 0) * sK;
+      return [b[0] + ox, b[1] + oy];
+    }
+    // 统一位点缩放渲染：半径/铺开/抬升/命中区/（医院）红十字尺寸，全部按同一坐标逻辑 markerBase 驱动；
+    // 仅「外观常量」按 kind 区分（C = {rGrain, rDot, hitPx, cross, stroke}）。
+    function _applyMarkerZoom(m, k, C){
+      if (!m.el) return;
+      const zf = zoomFactor(k);
+      const rScreen = C.rGrain + (C.rDot - C.rGrain) * zf;   // 屏幕半径：k=1 粒 → k=ZOOM_FULL 圆点
+      const rContent = rScreen / k;                          // 内容坐标半径（在 g 内被 scale(k) 还原成屏幕 rScreen）
+      const [bx, by] = markerBase(m, k);
+      m.el.attr('transform', `translate(${bx.toFixed(2)},${by.toFixed(2)})`);
+      if (m.ptEl) m.ptEl.attr('r', rContent);                // 圆点/十字圆：半径随 k 插值
+      if (C.stroke) m.ptEl && m.ptEl.attr('stroke-width', 1.0 / k);   // 医院白底红框描边恒定屏幕 ~1px
+      if (C.cross){                                          // 红十字两臂尺寸严格在圆点内，随 k 同步
+        const hlCross = rContent * 0.60, hwCross = rContent * 0.30;
+        if (m.crossV) m.crossV.attr('x', -hwCross).attr('y', -hlCross).attr('width', 2*hwCross).attr('height', 2*hlCross);
+        if (m.crossH) m.crossH.attr('x', -hlCross).attr('y', -hwCross).attr('width', 2*hlCross).attr('height', 2*hlCross);
+      }
+      if (m.hitEl) m.hitEl.attr('r', C.hitPx / k);           // 命中区恒定屏幕尺寸，任意缩放下不放大成盲区
+    }
+    // 客户点缩放：复用统一逻辑，外观常量取自客户圆点（黄点、无描边、无红十字）
     function updateCustZoom(k){
       if (!_gCust || !_custEls || !_custEls.length) return;
-      const zf = zoomFactor(k);
-      const sepF = Math.min(1, zf * 1.8);                  // 铺开量比半径更快到满：保证任意缩放下都不重叠（半径尚小、铺开已足）
-      const rScreen = GRAIN_R + (DOT_R - GRAIN_R) * zf;   // 屏幕半径：k=1 粒 → k=ZOOM_FULL 圆点
-      const rContent = rScreen / k;                        // 内容坐标半径（在 g 内被 scale(k) 还原成屏幕 rScreen）
-      const sK = sepF / k;                                  // 去重叠偏移系数：屏幕 off * sepF，转内容坐标需 /k（g 变换会再 ×k 还原成屏幕 off·sepF）
-      const LIFT_ST = 1.04;                                 // 与 renderEmboss 顶面缩放一致
-      const H = 9 / k;                                      // 3D 浮雕客户点抬升：屏幕恒定 9px → 内容坐标 9/k（随缩放反比）；实时算，不冻结 hover 时刻 k，放大地图时抬升屏幕高度恒定、不再“飞高”
-      const els = _custEls;
-      for (let i = 0; i < els.length; i++){
-        const m = els[i]; if (!m.el) continue;
-        const b = (m.lifted && m.liftC)
-          ? [ m.liftC[0] + LIFT_ST*(m.base[0]-m.liftC[0]), (m.liftC[1]-H) + LIFT_ST*(m.base[1]-m.liftC[1]) ]   // 抬升基坐标按当前 k 实时算（屏幕抬升恒 9px）
-          : m.base;
-        const ox = (m.off ? m.off[0] : 0) * sK;
-        const oy = (m.off ? m.off[1] : 0) * sK;
-        m.el.attr('transform', `translate(${(b[0] + ox).toFixed(2)},${(b[1] + oy).toFixed(2)})`);
-        if (m.ptEl) m.ptEl.attr('r', rContent); else m.el.select('circle.cust-pt').attr('r', rContent);
-        // 命中区恒定屏幕尺寸：content 半径 = HIT_PX / k（在 zoom 组被 scale(k) 还原成屏幕 HIT_PX px），任意缩放下都是 10px，放大到最大也不会变成 54px 盲区
-        if (m.hitEl) m.hitEl.attr('r', CUST_HIT_PX / k); else m.el.select('circle.cust-hit').attr('r', CUST_HIT_PX / k);
-      }
+      const C = { rGrain: GRAIN_R, rDot: DOT_R, hitPx: CUST_HIT_PX, cross: false, stroke: false };
+      _custEls.forEach(m => _applyMarkerZoom(m, k, C));
+    }
+    // 医院点缩放：复用同一套 markerBase 抬升/铺开逻辑 —— 与经销商点完全同步（原实现医院从不抬升，导致悬停浮雕/放大时两类点漂移不同步）。
+    // 仅外观常量不同：红点(白底红框 + 红十字)、命中区略大。
+    function updateHospZoom(k){
+      if (!_gHosp || !_hospEls || !_hospEls.length) return;
+      const C = { rGrain: HOSP_GRAIN_R, rDot: HOSP_DOT_R, hitPx: HOSP_HIT_PX, cross: true, stroke: true };
+      _hospEls.forEach(m => _applyMarkerZoom(m, k, C));
     }
     function drawCustomerPointsOnMap(list){
       // 省份地图（PROJ / _gCust）异步加载，可能晚于客户数据到达；未就绪则短暂重试
@@ -1487,7 +1535,7 @@ window.addEventListener("unhandledrejection", function(e){
           .on('mouseenter', () => showCustTip(r)).on('mouseleave', hideTip);
         const ptEl = g.select('circle.cust-pt');   // 缓存子元素引用：避免放大动画每帧重复 d3.select 子查询（性能优化）
         const hitEl = g.select('circle.cust-hit');
-        _custEls.push({ el: g, base: p, rec: r, lifted: false, liftedBase: null, liftC: null, off: [0, 0], ptEl, hitEl });
+        _custEls.push({ el: g, base: p, rec: r, kind: 'cust', lifted: false, liftC: null, off: [0, 0], ptEl, hitEl });
       });
       assignRegions();
       // 分块国：客户晚于某些州 chunk 到达时，回填这些已建州的客户 ADM2 归属 + 预分组（增量，零精度损失）
@@ -1499,7 +1547,7 @@ window.addEventListener("unhandledrejection", function(e){
         });
       }
       applyHideUnselected();   // 重绘后按"总开关+选中"恢复各点可见性（总开关关且有点亮选→仅选中可见；否则按保留模式），避免整组隐藏把点亮选的点也吃掉
-      computeOffsets();                                  // 一次性算出恒定屏幕空间去重叠偏移
+      computeOffsets(_custEls, DOT_R, _GA);             // 一次性算出恒定屏幕空间去重叠偏移（统一算法）
       updateCustZoom(_curK || 1);  // 初始布局（与当前缩放一致：k=1 → 像素粒堆叠于真实位置）
       updateHospZoom(_curK || 1);  // 医院点同步初始布局
       updateCustStat();   // 点位重绘后刷新右下角统计
@@ -1527,72 +1575,7 @@ window.addEventListener("unhandledrejection", function(e){
     const HOSP_GRAIN_R = 1.8;               // 初始像素粒半径（屏幕 px）
     const HOSP_DOT_R = 3.4;                 // 放大后清晰圆点半径（略大于客户圆点，给红十字留空间）
     const HOSP_HIT_PX = 11;                 // 透明命中区：恒定屏幕尺寸(px)
-    // 一次性算恒定屏幕空间去重叠偏移（参考系 k=1），之后不再随缩放重算（与客户 computeOffsets 同款）
-    function computeHospOffsets(){
-      const els = _hospEls, n = els ? els.length : 0;
-      if (!n) return;
-      const minDist = HOSP_DOT_R * 2 + 2.0;
-      for (let i = 0; i < n; i++) els[i].off = [0, 0];
-      const buckets = {};
-      for (let i = 0; i < n; i++){
-        const b = els[i].base;
-        const key = Math.round(b[0]) + '_' + Math.round(b[1]);
-        (buckets[key] = buckets[key] || []).push(i);
-      }
-      for (const key in buckets){
-        const grp = buckets[key], m = grp.length;
-        if (m <= 1) continue;
-        const R = minDist * 0.6 * Math.sqrt(m);
-        for (let j = 0; j < m; j++){
-          const i = grp[j];
-          if (j === 0){ els[i].off = [0, 0]; continue; }
-          const ang = j * _HOSP_GA, rad = R * Math.sqrt(j / m);
-          els[i].off = [Math.cos(ang) * rad, Math.sin(ang) * rad];
-        }
-      }
-      for (let iter = 0; iter < 25; iter++){
-        let moved = false;
-        for (let i = 0; i < n; i++){
-          const xi = els[i].base[0] + els[i].off[0], yi = els[i].base[1] + els[i].off[1];
-          for (let j = i + 1; j < n; j++){
-            const xj = els[j].base[0] + els[j].off[0], yj = els[j].base[1] + els[j].off[1];
-            let dx = xj - xi, dy = yj - yi, d2 = dx*dx + dy*dy;
-            if (d2 < minDist * minDist){
-              let d = Math.sqrt(d2), ux, uy;
-              if (d > 0.01){ ux = dx/d; uy = dy/d; } else { const a = i * _HOSP_GA; ux = Math.cos(a); uy = Math.sin(a); d = 0; }
-              const push = (minDist - d) / 2 + 0.05;
-              els[i].off[0] -= ux*push; els[i].off[1] -= uy*push;
-              els[j].off[0] += ux*push; els[j].off[1] += uy*push;
-              moved = true;
-            }
-          }
-        }
-        if (!moved) break;
-      }
-    }
-    // 医院点随缩放动态：颗粒 ↔ 圆点（半径/铺开/红十字尺寸同步插值，保证红十字始终在圆点内）
-    function updateHospZoom(k){
-      if (!_gHosp || !_hospEls || !_hospEls.length) return;
-      const zf = Math.max(0, Math.min(1, (k - 1) / (ZOOM_FULL - 1)));
-      const rScreen = HOSP_GRAIN_R + (HOSP_DOT_R - HOSP_GRAIN_R) * zf;
-      const rContent = rScreen / k;                       // 内容坐标半径（在 g 内被 scale(k) 还原成屏幕 rScreen）
-      const sK = Math.min(1, zf * 1.8) / k;               // 去重叠偏移系数
-      const hlCross = rContent * 0.60;                    // 红十字半长（< rContent：严格不超出圆点尺寸）
-      const hwCross = rContent * 0.30;                    // 红十字半宽
-      const strokeC = 1.0 / k;                            // 圆点描边：恒定屏幕 ~1px
-      const els = _hospEls;
-      for (let i = 0; i < els.length; i++){
-        const m = els[i]; if (!m.el) continue;
-        const b = (m.lifted && m.liftedBase) ? m.liftedBase : m.base;
-        const ox = (m.off ? m.off[0] : 0) * sK;
-        const oy = (m.off ? m.off[1] : 0) * sK;
-        m.el.attr('transform', `translate(${(b[0] + ox).toFixed(2)},${(b[1] + oy).toFixed(2)})`);
-        if (m.ptEl) m.ptEl.attr('r', rContent).attr('stroke-width', strokeC);
-        if (m.crossV) m.crossV.attr('x', -hwCross).attr('y', -hlCross).attr('width', 2*hwCross).attr('height', 2*hlCross);
-        if (m.crossH) m.crossH.attr('x', -hlCross).attr('y', -hwCross).attr('width', 2*hlCross).attr('height', 2*hwCross);
-        if (m.hitEl) m.hitEl.attr('r', HOSP_HIT_PX / k);
-      }
-    }
+
     function drawHospitalPointsOnMap(list){
       if (!_gHosp || !PROJ){
         if (drawHospitalPointsOnMap._tries == null) drawHospitalPointsOnMap._tries = 0;
@@ -1621,7 +1604,7 @@ window.addEventListener("unhandledrejection", function(e){
           .on('mouseenter', () => showHospTip(r)).on('mouseleave', hideTip);
         const ptEl = g.select('circle.hosp-pt');
         const hitEl = g.select('circle.hosp-hit');
-        _hospEls.push({ el:g, base:p, rec:r, lifted:false, liftedBase:null, off:[0,0], ptEl, crossV:cv, crossH:ch, hitEl });
+        _hospEls.push({ el:g, base:p, rec:r, kind:'hosp', lifted:false, liftC:null, off:[0,0], ptEl, crossV:cv, crossH:ch, hitEl });
       });
       // 重绘后恢复已有选中高亮（仅改 fill/stroke，尺寸/位置不变）
       if (_hlHospIds.size){
@@ -1630,7 +1613,7 @@ window.addEventListener("unhandledrejection", function(e){
         });
       }
       // 图层容器始终可见（不再整组隐藏）；各医院点可见性交由下方 applyHideUnselectedHosp 按"总开关+选中"逐点控制
-      computeHospOffsets();
+      computeOffsets(_hospEls, HOSP_DOT_R, _HOSP_GA);   // 医院点去重叠铺开（与客户点共用同一算法）
       updateHospZoom(_curK || 1);
       applyHideUnselectedHosp();   // 重绘后重新应用「隐藏未选医院」：仅保留选中红点
     }
@@ -2133,19 +2116,8 @@ window.addEventListener("unhandledrejection", function(e){
       });
       return idx;
     }
-    // 客户点「当前显示坐标」= 真实基坐标 + 去重叠铺开偏移(与 updateCustZoom 完全一致)，保证虚线端点贴合圆点
-    function routePos(m, k){
-      const zf = zoomFactor(k);
-      const sepF = Math.min(1, zf * 1.8);
-      const sK = sepF / k;
-      const LIFT_ST = 1.04, H = 9 / k;
-      const b = (m.lifted && m.liftC)
-        ? [ m.liftC[0] + LIFT_ST*(m.base[0]-m.liftC[0]), (m.liftC[1]-H) + LIFT_ST*(m.base[1]-m.liftC[1]) ]
-        : m.base;
-      const ox = (m.off ? m.off[0] : 0) * sK;
-      const oy = (m.off ? m.off[1] : 0) * sK;
-      return [b[0] + ox, b[1] + oy];
-    }
+    // 客户/医院点「当前显示坐标」= 与地图点完全相同的 markerBase（抬升+铺开），保证路线虚线端点贴合圆点、且随浮雕/缩放与两类点同步
+    function routePos(m, k){ return markerBase(m, k); }
     // 重算参与路线的点集 + TSP 闭合顺序，再绘制（开启隐藏未选时仅用已选中点）
     function rebuildRoute(){
       // 自愈：resize 重绘会重建 zoom 组 g，旧的 _gRoute 节点脱离文档 → route 仍开启时重新挂到当前 g，避免路线在缩放/重绘后消失
